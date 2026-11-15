@@ -129,8 +129,63 @@ with sync_playwright() as p:
     except Exception as e:
         check('reconnect + transfer works', False, str(e)[:120])
 
+    # text / links both ways ({t:'text'})
+    TXT = """() => [...document.querySelectorAll('#list .it.txt.in')].map(li => {
+      const p = li.querySelector('.tx');
+      return {text: p.textContent, links: [...p.querySelectorAll('a')].map(a => a.getAttribute('href')), tags: [...p.querySelectorAll('*')].map(e => e.tagName)};
+    })"""
+    def got_text(pg, n):
+        pg.wait_for_function(f"document.querySelectorAll('#list .it.txt.in').length >= {n}", timeout=20000)
+        return pg.evaluate(TXT)[0]  # newest first
+    try:
+        AR = 'مرحبا يا عبدالعزيز 👋\nسطر ثاني — اختبار <img src=x onerror=alert(1)> & "اقتباس"'
+        pa.fill('#msg', AR); pa.press('#msg', 'Enter')
+        r = got_text(pb2, 1)
+        check('PC→phone Arabic text identical (Enter sends)', r['text'] == AR, repr(r['text'][:40]))
+        check('text shown as text only (no injected tags)', r['tags'] == [], str(r['tags']))
+        check('PC input cleared after send', pa.input_value('#msg') == '')
+        check('sender lists its own text', pa.evaluate("document.querySelectorAll('#list .it.txt.out').length") == 1)
+
+        LNK = 'شوف https://example.com/a?b=1&c=ت، وهذا لا javascript:alert(1) ولا ftp://x.com'
+        pa.fill('#msg', LNK); pa.click('#say button[type=submit]')
+        r = got_text(pb2, 2)
+        check('PC→phone link text identical', r['text'] == LNK)
+        check('only the http(s) link is clickable, without trailing «،»', r['links'] == ['https://example.com/a?b=1&c=ت'], str(r['links']))
+
+        BACK = 'من الجوال: http://192.168.1.5:8080/x?y=ي\nhttps://wasl.example/مسار).'
+        pb2.fill('#msg', BACK); pb2.click('#say button[type=submit]')
+        r = got_text(pa, 1)
+        check('phone→PC text identical', r['text'] == BACK)
+        check('phone→PC links', r['links'] == ['http://192.168.1.5:8080/x?y=ي', 'https://wasl.example/مسار'], str(r['links']))
+
+        # built in JS so length counts UTF-16 units like the app does; 7999/8000 cut lands inside an emoji
+        LONG = pb2.evaluate("() => { let s = 'ن'.repeat(7999); while (s.length < 100000) s += '😀 نص طويل '; s = s.slice(0, 100000); if (/[\\uD800-\\uDBFF]$/.test(s)) s = s.slice(0, -1) + 'ي'; document.querySelector('#msg').value = s; return s; }")
+        check('long test text is 100,000 JS chars', pb2.evaluate("document.querySelector('#msg').value.length") == 100000)
+        pb2.click('#say button[type=submit]')
+        r = got_text(pa, 2)
+        A.grant_permissions(['clipboard-read', 'clipboard-write'], origin=ROOT.rstrip('/'))
+        pa.locator('#list .it.txt.in .cp').first.click(); time.sleep(0.3)
+        check('100,000-char text arrives identical (split into parts, checked via Copy)', pa.evaluate('navigator.clipboard.readText()') == LONG)
+        check('long text shows a preview + note', LONG.startswith(r['text']) and 1000 < len(r['text']) < 3001 and vis(pa, '#list .it.txt.in .more'), f"{len(r['text'])} shown")
+        check('page stays responsive (still connected)', vis(pa, '#room') and vis(pb2, '#room'))
+        msgs = []
+        pb2.on('dialog', lambda d: (msgs.append(d.message), d.dismiss()))
+        pb2.evaluate("s => { document.querySelector('#msg').value = s + 'x'; setTimeout(() => document.querySelector('#say').requestSubmit()); }", LONG)
+        for _ in range(30):
+            if msgs: break
+            pb2.wait_for_timeout(100)
+        time.sleep(1)
+        check('100,001 chars refused with a message', msgs and '100' in msgs[0] and pa.evaluate("document.querySelectorAll('#list .it.txt.in').length") == 2, msgs[:1])
+        check('still connected after the refusal', vis(pa, '#room') and vis(pb2, '#room'))
+
+        pa.locator('#list .it.txt.in .cp').nth(1).click()  # the BACK text
+        time.sleep(0.3)
+        check('copy button copies the exact text', pa.evaluate('navigator.clipboard.readText()') == BACK)
+    except Exception as e:
+        check('text messages', False, str(e)[:160])
+
     # wrong code
-    D = ctx(**iphone, color_scheme='dark')
+    D =ctx(**iphone, color_scheme='dark')
     pd = page(D, 'DARK')
     pd.goto(BASE)
     pd.wait_for_selector('#pair:not([hidden])', timeout=15000)

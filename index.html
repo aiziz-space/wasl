@@ -102,6 +102,16 @@ button:active,.btn:active{transform:translateY(1px)}
 .ico svg{width:32px;height:32px}
 .drop b{font:600 20px/1.35 var(--display);margin-top:6px}
 .drop .small{max-width:46ch;margin:0}
+/* إرسال نص */
+.say{display:flex;gap:10px;align-items:flex-end;margin-top:14px}
+.say textarea{flex:1;min-width:0;font:inherit;font-size:16px;line-height:1.5;min-height:50px;max-height:40vh;padding:12px 16px;border:1px solid var(--line2);border-radius:14px;background:var(--bg);color:var(--ink);resize:vertical;text-align:start}
+.say textarea::placeholder{color:var(--mute)}
+.say textarea:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 4px var(--glow)}
+.tx{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:start;max-height:9.9em;overflow:auto}
+.tx a{color:var(--acc)}
+.it.txt .more{display:block;margin-top:4px}
+.it.txt{align-items:start}
+.it.txt .act .ghost{height:44px;padding:0 16px;font-size:15px}
 /* فشل */
 .fail{display:grid;gap:6px}
 .warn{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:rgba(217,58,43,.12);color:var(--bad);margin-bottom:8px}
@@ -209,6 +219,11 @@ footer{margin-top:36px;padding-top:20px;display:flex;flex-wrap:wrap;justify-cont
       <b data-i18n="dropTitle">اسحب الملفات هنا أو اضغط للاختيار</b>
       <span class="small" data-i18n="dropSub">صور، فيديو، مستندات — أي ملف، وأكثر من ملف مرة وحدة. في الكمبيوتر تقدر تلصق صورة بـ Ctrl+V.</span>
     </label>
+    <form class="say" id="say" autocomplete="off">
+      <label class="vh" for="msg" data-i18n="msgPh">اكتب نص أو الصق رابط</label>
+      <textarea id="msg" rows="2" dir="auto" placeholder="اكتب نص أو الصق رابط" data-i18n-ph="msgPh"></textarea>
+      <button type="submit" data-i18n="sendText">إرسال</button>
+    </form>
   </section>
 
   <section id="fail" hidden>
@@ -266,6 +281,9 @@ const CFG = {
   big: 100 * 1024 * 1024, // نطلب تأكيد فوق هذا الحجم
   timeout: 20000,         // مهلة محاولة الاتصال
   dead: 12000,            // إذا ما وصلنا شيء من الطرف الثاني خلال هذي المدة نعتبره انقطع
+  textMax: 100000,        // أقصى طول للنص المرسل (حرف)
+  textPart: 8000,         // النص الطويل يتقسّم لقطع عشان ما يتجاوز حد الرسالة الواحدة في WebRTC
+  textShow: 3000,         // نعرض أول 3000 حرف بس؛ عرض نص ضخم يعلّق الصفحة ثواني. «نسخ» ينسخه كامل
   ice: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } // STUN فقط: ما فيه TURN، يعني الملف ما يمر على أي خادم
 };
 
@@ -321,7 +339,9 @@ const I18N = {
     waiting: 'بالانتظار', receiving: 'جاري الاستلام', sending: 'جاري الإرسال', sentWait: 'أُرسل، بانتظار التأكيد',
     delivered: 'وصل ✓', received: 'وصل', lostMid: 'انقطع قبل ما يكتمل', incomplete: 'ما اكتمل',
     readFail: 'ما قدرنا نقرأ الملف', sendLost: 'انقطع الاتصال، أرسله مرة ثانية',
-    save: 'حفظ', remove: 'إزالة', file: 'ملف', big: BIG_AR
+    save: 'حفظ', remove: 'إزالة', file: 'ملف', big: BIG_AR,
+    msgPh: 'اكتب نص أو الصق رابط', sendText: 'إرسال', copyText: 'نسخ', sentText: 'أُرسل', textIn: 'نص',
+    tooLong: 'النص طويل. الحد 100 ألف حرف.', moreText: '… وباقي {n} حرف. اضغط «نسخ» للنص كامل.'
   },
   en: {
     title: 'Wasl — Send files between your phone and computer',
@@ -371,11 +391,14 @@ const I18N = {
     waiting: 'Queued', receiving: 'Receiving', sending: 'Sending', sentWait: 'Sent, waiting for confirmation',
     delivered: 'Delivered ✓', received: 'Received', lostMid: 'Interrupted before finishing', incomplete: 'Incomplete',
     readFail: 'Couldn’t read the file', sendLost: 'Connection lost — send it again',
-    save: 'Save', remove: 'Remove', file: 'file', big: BIG_EN
+    save: 'Save', remove: 'Remove', file: 'file', big: BIG_EN,
+    msgPh: 'Type text or paste a link', sendText: 'Send', copyText: 'Copy', sentText: 'Sent', textIn: 'Text',
+    tooLong: 'That text is too long. The limit is 100,000 characters.', moreText: '… plus {n} more characters. Tap “Copy” for the full text.'
   }
 };
 const ICON_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m0 0-5 5m5-5 5 5"/></svg>';
-const ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14m0 0-5-5m5 5 5-5"/></svg>';
+const ICON_TEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 6h14M5 11h14M5 16h9"/></svg>';
+const ICON_DOWN ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14m0 0-5-5m5 5 5-5"/></svg>';
 
 const $ = s => document.querySelector(s);
 const ABC = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -385,7 +408,7 @@ const UA = navigator.userAgent;
 const iOS = /iPhone|iPad/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
 const items = new Map();
 const ui = { wait: ['preparing'], fail: ['errPair'], peer: ['connected'] }; // آخر رسائل معروضة، نعيد رسمها إذا تغيّرت اللغة
-let peer, conn, myCode = '', dialed = '', queue = [], sending = false, rx = null, timer, beat, seen = 0, seq = 0, rseq = 0, lock;
+let peer, conn, myCode = '', dialed = '', queue = [], sending = false, rx = null, tx = null, timer, beat, seen = 0, seq = 0, rseq = 0, lock;
 let lang = (() => {
   try { const s = localStorage.getItem('wasl-lang'); if (s === 'ar' || s === 'en') return s; } catch (e) {}
   return (navigator.languages || [navigator.language || '']).some(l => /^ar\b/i.test(l)) ? 'ar' : 'en';
@@ -534,6 +557,7 @@ function lost(c) {
   clearTimeout(timer);
   clearInterval(beat);
   if (rx) { mark(rx.key, 'bad', 'lostMid'); rx = null; }
+  tx = null;
   if (dialed) return fail('errLost', null, true);
   $('#pairNote').hidden = false;
   show('pair');
@@ -572,6 +596,7 @@ function onData(d) {
     else if (m.t === 'end' && rx) { if (!rx.skip) finish(rx); rx = null; }
     else if (m.t === 'cancel' && rx) { remove(rx.key); rx = null; }
     else if (m.t === 'got') mark('s' + (m.id | 0), 'done', 'delivered');
+    else if (m.t === 'text') gotText(m);
     return;
   }
   if (!rx || rx.skip) return;
@@ -600,7 +625,33 @@ function finish(r) {
   if (iOS) $('#iosHint').hidden = false;
 }
 
+// النص يوصل بقطعة وحدة أو أكثر لنفس id، الأخيرة بدون more
+function gotText(m) {
+  if (typeof m.text !== 'string') return;
+  const id = m.id | 0;
+  if (!tx || tx.id !== id) tx = { id, parts: [], len: 0 };
+  if (tx.skip) { if (!m.more) tx = null; return; }
+  tx.parts.push(m.text);
+  tx.len += m.text.length;
+  if (tx.len > CFG.textMax) { tx.parts = []; tx.skip = true; }
+  else if (!m.more) { const s = tx.parts.join(''); if (s) addText('r' + (++rseq), 'in', s); }
+  if (!m.more) tx = null;
+}
+
 // ===== الإرسال =====
+function sendText(s) {
+  if (!s.trim() || !conn || !conn.open) return false;
+  if (s.length > CFG.textMax) { alert(t('tooLong')); return false; }
+  const id = ++seq;
+  for (let i = 0; i < s.length;) {
+    let j = Math.min(s.length, i + CFG.textPart);
+    if (j < s.length && /[\uD800-\uDBFF]/.test(s[j - 1])) j--; // لا نقص الإيموجي من النص
+    send(j < s.length ? { t: 'text', id, text: s.slice(i, j), more: true } : { t: 'text', id, text: s.slice(i, j) });
+    i = j;
+  }
+  addText('s' + id, 'out', s);
+  return true;
+}
 function enqueue(list) {
   const fs = Array.from(list || []);
   if (!fs.length) return;
@@ -659,7 +710,56 @@ function addItem(key, dir, name, size) {
   $('#files').hidden = false;
   $('#fcount').textContent = items.size;
 }
+// يحط النص في العنصر كنص فقط، والروابط http/https تصير قابلة للضغط. ما نستخدم innerHTML أبدًا هنا
+function linkify(el, s) {
+  const re = /https?:\/\/[^\s<>"]+/gi;
+  let last = 0, m;
+  while ((m = re.exec(s))) {
+    const u = m[0].replace(/[.,;:!?)\]}'"،؛]+$/, '');
+    let ok = false;
+    try { ok = /^https?:$/.test(new URL(u).protocol); } catch (e) {}
+    if (!ok || !u) continue;
+    el.append(document.createTextNode(s.slice(last, m.index)));
+    const a = document.createElement('a');
+    a.href = u; a.textContent = u; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    el.append(a);
+    last = m.index + u.length;
+    re.lastIndex = last;
+  }
+  el.append(document.createTextNode(s.slice(last)));
+}
+function addText(key, dir, text) {
+  const li = document.createElement('li');
+  li.className = 'it txt ' + dir;
+  li.innerHTML = '<div class="th">' + ICON_TEXT + '</div><div><p class="tx"></p><span class="sz more" hidden></span><span class="sz"></span></div><div class="act"><button class="ghost cp" type="button"></button><button class="x" type="button">×</button></div>';
+  let n = Math.min(text.length, CFG.textShow);
+  if (n < text.length && /[\uD800-\uDBFF]/.test(text[n - 1])) n--;
+  linkify(li.querySelector('.tx'), text.slice(0, n));
+  const it = { key, li, dir, text, kind: 'text', st: dir === 'in' ? 'received' : 'sentText', rest: text.length - n };
+  const cp = li.querySelector('.cp');
+  cp.onclick = async () => {
+    try { await navigator.clipboard.writeText(it.text); it.cp = 'copied'; } catch (e) { it.cp = 'copyFail'; }
+    paint(it);
+    clearTimeout(it.cpT);
+    it.cpT = setTimeout(() => { it.cp = ''; paint(it); }, 1800);
+  };
+  li.querySelector('.x').onclick = () => remove(key);
+  items.set(key, it);
+  paint(it);
+  $('#list').prepend(li);
+  $('#files').hidden = false;
+  $('#fcount').textContent = items.size;
+}
 function paint(it) {
+  if (it.kind === 'text') {
+    it.li.querySelector('.sz:not(.more)').textContent = t('textIn') + ' · ' + t(it.st);
+    const more = it.li.querySelector('.more');
+    more.hidden = !it.rest;
+    if (it.rest) more.textContent = t('moreText', { n: '\u2066' + it.rest.toLocaleString('en') + '\u2069' });
+    it.li.querySelector('.cp').textContent = t(it.cp || 'copyText');
+    it.li.querySelector('.x').setAttribute('aria-label', t('remove'));
+    return;
+  }
   const live = it.pct >= 0 && (it.st === 'receiving' || it.st === 'sending');
   it.li.querySelector('.sz').textContent = fmt(it.size) + ' · ' + t(it.st) + (live ? ' ' + it.pct + '%' : '');
   it.li.querySelector('.x').setAttribute('aria-label', t('remove'));
@@ -702,7 +802,7 @@ addEventListener('dragenter', e => { e.preventDefault(); depth++; dz.classList.a
 addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; dz.classList.remove('on'); } });
 addEventListener('dragover', e => e.preventDefault());
 addEventListener('drop', e => { e.preventDefault(); depth = 0; dz.classList.remove('on'); if (e.dataTransfer) enqueue(e.dataTransfer.files); });
-addEventListener('paste', e => { if (e.target.closest && e.target.closest('input')) return; const f = e.clipboardData && e.clipboardData.files; if (f && f.length) enqueue(f); });
+addEventListener('paste', e => { if (e.target.closest && e.target.closest('input,textarea')) return; const f = e.clipboardData && e.clipboardData.files; if (f && f.length) enqueue(f); });
 $('#pick').addEventListener('change', e => { enqueue(e.target.files); e.target.value = ''; });
 $('#join').addEventListener('submit', e => {
   e.preventDefault();
@@ -711,6 +811,18 @@ $('#join').addEventListener('submit', e => {
   if (v === myCode) { $('#codeIn').value = ''; $('#codeIn').placeholder = t('ownCode'); return; }
   dialed = v;
   redial();
+});
+$('#say').addEventListener('submit', e => {
+  e.preventDefault();
+  const m = $('#msg');
+  if (sendText(m.value)) m.value = '';
+  m.focus();
+});
+$('#msg').addEventListener('keydown', e => {
+  // في الكمبيوتر: Enter يرسل و Shift+Enter سطر جديد. في الجوال Enter سطر جديد والإرسال بالزر
+  if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229 || matchMedia('(pointer: coarse)').matches) return;
+  e.preventDefault();
+  $('#say').requestSubmit();
 });
 $('#copy').addEventListener('click', async () => {
   const b = $('#copy');
