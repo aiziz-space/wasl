@@ -112,6 +112,13 @@ button:active,.btn:active{transform:translateY(1px)}
 .it.txt .more{display:block;margin-top:4px}
 .it.txt{align-items:start}
 .it.txt .act .ghost{height:44px;padding:0 16px;font-size:15px}
+/* نافذة السماح بالاتصال */
+.ask{border:1px solid var(--line);border-radius:24px;background:var(--card);color:var(--ink);padding:clamp(22px,5vw,32px);width:min(420px,calc(100vw - 32px));max-width:none;box-shadow:var(--shadow)}
+.ask::backdrop{background:rgba(5,7,12,.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.ask h2{margin-bottom:6px}
+.ask .small{margin:0}
+.ask .row{margin-top:22px}
+.ask .row button{flex:1}
 /* فشل */
 .fail{display:grid;gap:6px}
 .warn{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:rgba(217,58,43,.12);color:var(--bad);margin-bottom:8px}
@@ -242,6 +249,13 @@ footer{margin-top:36px;padding-top:20px;display:flex;flex-wrap:wrap;justify-cont
   </section>
 </main>
 
+<dialog class="ask" id="ask" aria-labelledby="askTitle">
+  <span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/></svg></span>
+  <h2 id="askTitle"></h2>
+  <p class="small" data-i18n="askNote">اقبل بس إذا كان هذا جهازك.</p>
+  <div class="row"><button type="button" id="askYes" data-i18n="accept">قبول</button><button type="button" class="ghost" id="askNo" data-i18n="decline">رفض</button></div>
+</dialog>
+
 <section class="files" id="files" hidden>
   <div class="fhead"><h3 data-i18n="files">الملفات</h3><span class="count" id="fcount">0</span></div>
   <p class="small"><span data-i18n="filesNote">احفظ الملفات أول ما توصل. تنمسح إذا قفلت الصفحة.</span> <span id="iosHint" hidden data-i18n="iosHint">في الآيفون: اضغط على الصورة ثم اضغط عليها مطوّلًا واختر «إضافة إلى الصور».</span></p>
@@ -281,6 +295,8 @@ const CFG = {
   big: 100 * 1024 * 1024, // نطلب تأكيد فوق هذا الحجم
   timeout: 20000,         // مهلة محاولة الاتصال
   dead: 12000,            // إذا ما وصلنا شيء من الطرف الثاني خلال هذي المدة نعتبره انقطع
+  askName: 3000,          // ننتظر اسم الجهاز (رسالة hi) هالمدة قبل ما نعرض النافذة بدونه
+  askWait: 30000,         // إذا ما رد المستخدم على «تقبل؟» خلال هذي المدة نرفض
   textMax: 100000,        // أقصى طول للنص المرسل (حرف)
   textPart: 8000,         // النص الطويل يتقسّم لقطع عشان ما يتجاوز حد الرسالة الواحدة في WebRTC
   textShow: 3000,         // نعرض أول 3000 حرف بس؛ عرض نص ضخم يعلّق الصفحة ثواني. «نسخ» ينسخه كامل
@@ -341,6 +357,8 @@ const I18N = {
     readFail: 'ما قدرنا نقرأ الملف', sendLost: 'انقطع الاتصال، أرسله مرة ثانية',
     save: 'حفظ', remove: 'إزالة', file: 'ملف', big: BIG_AR,
     msgPh: 'اكتب نص أو الصق رابط', sendText: 'إرسال', copyText: 'نسخ', sentText: 'أُرسل', textIn: 'نص',
+    askTitle: '{n} يبي يتصل — تقبل؟', askAnon: 'جهاز يبي يتصل — تقبل؟', askNote: 'اقبل بس إذا كان هذا جهازك.',
+    accept: 'قبول', decline: 'رفض', waitApproval: 'بانتظار موافقة الجهاز الثاني…', errRejected: 'الجهاز الثاني رفض الاتصال.',
     tooLong: 'النص طويل. الحد 100 ألف حرف.', moreText: '… وباقي {n} حرف. اضغط «نسخ» للنص كامل.'
   },
   en: {
@@ -393,6 +411,8 @@ const I18N = {
     readFail: 'Couldn’t read the file', sendLost: 'Connection lost — send it again',
     save: 'Save', remove: 'Remove', file: 'file', big: BIG_EN,
     msgPh: 'Type text or paste a link', sendText: 'Send', copyText: 'Copy', sentText: 'Sent', textIn: 'Text',
+    askTitle: '{n} wants to connect — accept?', askAnon: 'A device wants to connect — accept?', askNote: 'Only accept if this is your device.',
+    accept: 'Accept', decline: 'Decline', waitApproval: 'Waiting for the other device to accept…', errRejected: 'The other device declined the connection.',
     tooLong: 'That text is too long. The limit is 100,000 characters.', moreText: '… plus {n} more characters. Tap “Copy” for the full text.'
   }
 };
@@ -409,6 +429,19 @@ const iOS = /iPhone|iPad/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouc
 const items = new Map();
 const ui = { wait: ['preparing'], fail: ['errPair'], peer: ['connected'] }; // آخر رسائل معروضة، نعيد رسمها إذا تغيّرت اللغة
 let peer, conn, myCode = '', dialed = '', queue = [], sending = false, rx = null, tx = null, timer, beat, seen = 0, seq = 0, rseq = 0, lock;
+let ask = null;              // الاتصال اللي ننتظر رد المستخدم عليه: {c, t3, t30}
+const trusted = new Set();   // رموز الأجهزة اللي قبلناها في هذي الجلسة (في الذاكرة بس)
+const TOK = /^[0-9a-f]{32}$/;
+// رمز عشوائي 128 بت لكل جهاز نتصل فيه، محفوظ في التبويب: لو انقطعنا ورجعنا ننقبل بدون سؤال
+function tokFor(code) {
+  let m = {};
+  try { m = JSON.parse(sessionStorage.getItem('wasl-tok') || '{}') || {}; } catch (e) {}
+  if (!TOK.test(m[code] || '')) {
+    m[code] = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+    try { sessionStorage.setItem('wasl-tok', JSON.stringify(m)); } catch (e) {}
+  }
+  return m[code];
+}
 let lang = (() => {
   try { const s = localStorage.getItem('wasl-lang'); if (s === 'ar' || s === 'en') return s; } catch (e) {}
   return (navigator.languages || [navigator.language || '']).some(l => /^ar\b/i.test(l)) ? 'ar' : 'en';
@@ -448,6 +481,7 @@ function applyLang(l, save) {
   $('#waitMsg').textContent = t(...ui.wait);
   $('#failMsg').textContent = t(...ui.fail);
   $('#peerName').textContent = t(...ui.peer);
+  if (ui.ask) $('#askTitle').textContent = t(...ui.ask);
   items.forEach(paint);
   if (save) try { localStorage.setItem('wasl-lang', l); } catch (e) {}
 }
@@ -484,7 +518,7 @@ function host(fresh) {
       return;
     }
     waiting('incoming');
-    attach(c);
+    attach(c, true);
   });
 }
 function guest(t0) {
@@ -523,8 +557,10 @@ function redial() {
   if (peer.disconnected) { peer.once('open', () => dial(dialed)); return peer.reconnect(); }
   dial(dialed);
 }
-function attach(c) {
+function attach(c, incoming) {
   if (conn && conn !== c) { const old = conn; conn = null; old.close(); }
+  closeAsk();
+  c.in = !!incoming; c.ok = false; // ما يمر شيء لين ينقبل الاتصال
   conn = c;
   clearTimeout(timer);
   setPeer('connected');
@@ -533,8 +569,8 @@ function attach(c) {
     if (conn !== c) return;
     clearTimeout(timer);
     c.dataChannel.bufferedAmountLowThreshold = CFG.high / 4;
-    show('room');
-    send({ t: 'hi', name: device() });
+    // المستقبِل ما يبدأ بالكلام: لاحظنا إن أول رسالة منه أحيانًا تضيع في Chrome، فيرد بـ hi بعد ما يوصله hi الطرف الثاني
+    if (!c.in) send({ t: 'hi', name: device(), tok: tokFor(dialed) });
     seen = Date.now();
     clearInterval(beat);
     // نبضة كل ثانيتين: إذا سكت الطرف الثاني (قفل الصفحة أو الجوال نام) نعرف خلال ثواني بدل نص دقيقة
@@ -543,19 +579,70 @@ function attach(c) {
       if (Date.now() - seen > CFG.dead) { lost(c); return c.close(); }
       send({ t: 'ping' });
     }, 2000);
-    wake();
-    pump();
+    if (c.in) ask = { c, t3: setTimeout(() => askUser(c), CFG.askName) }; // ننتظر الاسم شوي قبل نسأل
+    else waiting('waitApproval');
   });
-  c.on('data', onData);
+  c.on('data', d => onData(c, d));
   c.on('close', () => lost(c));
   c.on('error', () => lost(c));
   c.on('iceStateChanged', s => { if (s === 'failed' || s === 'closed') lost(c); });
 }
+// ===== السماح بالاتصال =====
+function ready(c) {
+  c.ok = true;
+  show('room');
+  wake();
+  pump();
+}
+function hello(c) {
+  if (c.said || conn !== c) return;
+  c.said = true;
+  send({ t: 'hi', name: device() });
+}
+function askUser(c, name) {
+  if (conn !== c || c.ok || !ask || ask.c !== c) return;
+  clearTimeout(ask.t3);
+  hello(c);
+  ui.ask = name ? ['askTitle', { n: '\u2068' + name + '\u2069' }] : ['askAnon']; // عزل الاسم عشان ما يقلب اتجاه الجملة
+  $('#askTitle').textContent = t(...ui.ask);
+  const d = $('#ask');
+  if (!d.open) {
+    d.showModal();
+    $('#askYes').focus();
+    ask.t30 = setTimeout(() => decline(c), CFG.askWait);
+  }
+}
+function closeAsk() {
+  if (ask) { clearTimeout(ask.t3); clearTimeout(ask.t30); ask = null; }
+  ui.ask = null;
+  const d = $('#ask');
+  if (d.open) d.close();
+}
+function approve(c) {
+  if (conn !== c || c.ok) return;
+  closeAsk();
+  if (c.tok) trusted.add(c.tok);
+  hello(c);
+  send({ t: 'accept' });
+  ready(c);
+}
+function decline(c) {
+  if (conn !== c || c.ok) return;
+  closeAsk();
+  hello(c);
+  send({ t: 'reject' });
+  conn = null;
+  clearInterval(beat);
+  setTimeout(() => c.close(), 5000); // هو يقفل أول ما يستلم، وهذا احتياط
+  show('pair');
+}
 function lost(c) {
   if (conn !== c) return;
   conn = null;
+  closeAsk();
   clearTimeout(timer);
   clearInterval(beat);
+  if (c.in && !c.ok) return show('pair'); // جهاز طلب يتصل وراح قبل ما نرد
   if (rx) { mark(rx.key, 'bad', 'lostMid'); rx = null; }
   tx = null;
   if (dialed) return fail('errLost', null, true);
@@ -580,14 +667,16 @@ async function wake() {
 }
 
 // ===== الاستلام =====
-function onData(d) {
+function onData(c, d) {
+  if (c !== conn) return; // بيانات من اتصال قديم أو مرفوض
   seen = Date.now();
+  if (!c.ok) return beforeOk(c, d);
   if (typeof d === 'string') {
     let m;
     try { m = JSON.parse(d); } catch (e) { return; }
     if (m.t === 'ping') return;
     if (m.t === 'busy') { const c = conn; conn = null; if (c) c.close(); return fail('errBusy'); }
-    if (m.t === 'hi') setPeer('connectedTo', { n: String(m.name || t('device')).slice(0, 24) });
+    if (m.t === 'hi') gotHi(m);
     else if (m.t === 'meta') {
       if (rx) mark(rx.key, 'bad', 'incomplete');
       rx = { id: m.id | 0, key: 'r' + (++rseq), name: String(m.name || t('file')).slice(0, 200), size: Math.max(0, +m.size || 0), mime: String(m.mime || '').slice(0, 100), got: 0, parts: [] };
@@ -603,6 +692,27 @@ function onData(d) {
   rx.parts.push(d);
   rx.got += d.byteLength || d.size || 0;
   tick(rx.key, rx.got, rx.size, 'receiving');
+}
+function gotHi(m) {
+  const n = String(m.name || '').slice(0, 24);
+  setPeer('connectedTo', { n: n || t('device') });
+  return n;
+}
+// قبل القبول: المستقبل ما يقبل إلا hi، والمتصل ينتظر accept أو reject. لا ملفات ولا نصوص
+function beforeOk(c, d) {
+  if (typeof d !== 'string') return;
+  let m;
+  try { m = JSON.parse(d); } catch (e) { return; }
+  if (m.t === 'hi') {
+    const n = gotHi(m);
+    if (!c.in) return;
+    if (typeof m.tok === 'string' && TOK.test(m.tok)) c.tok = m.tok;
+    if (c.tok && trusted.has(c.tok)) return approve(c); // نفس الجهاز رجع في نفس الجلسة
+    return askUser(c, n);
+  }
+  if (c.in) return;
+  if (m.t === 'accept') ready(c);
+  else if (m.t === 'reject' || m.t === 'busy') { conn = null; c.close(); fail(m.t === 'busy' ? 'errBusy' : 'errRejected'); }
 }
 function finish(r) {
   const it = items.get(r.key);
@@ -640,7 +750,7 @@ function gotText(m) {
 
 // ===== الإرسال =====
 function sendText(s) {
-  if (!s.trim() || !conn || !conn.open) return false;
+  if (!s.trim() || !conn || !conn.open || !conn.ok) return false;
   if (s.length > CFG.textMax) { alert(t('tooLong')); return false; }
   const id = ++seq;
   for (let i = 0; i < s.length;) {
@@ -668,7 +778,7 @@ const drained = dc => new Promise(res => {
 async function pump() {
   if (sending) return;
   sending = true;
-  while (queue.length && conn && conn.open) {
+  while (queue.length && conn && conn.open && conn.ok) {
     const c = conn, dc = c.dataChannel, j = queue[0], f = j.file, key = 's' + j.id;
     const max = c.peerConnection && c.peerConnection.sctp && c.peerConnection.sctp.maxMessageSize;
     const size = max > 1024 ? Math.min(CFG.chunk, max) : CFG.chunk;
@@ -829,6 +939,14 @@ $('#copy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(linkFor(myCode)); b.textContent = t('copied'); } catch (e) { b.textContent = t('copyFail'); }
   setTimeout(() => { b.textContent = t('copy'); }, 1800);
 });
+$('#askYes').addEventListener('click', () => ask && approve(ask.c));
+$('#askNo').addEventListener('click', () => ask && decline(ask.c));
+$('#ask').addEventListener('cancel', e => { e.preventDefault(); if (ask) decline(ask.c); }); // Esc = رفض
+$('#ask').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.target === $('#askNo')) return; // Enter = قبول، إلا لو التركيز على «رفض»
+  e.preventDefault();
+  if (ask) approve(ask.c);
+});
 $('#lang').addEventListener('click', () => applyLang(lang === 'ar' ? 'en' : 'ar', true));
 $('#retry').addEventListener('click', redial);
 $('#bye').addEventListener('click', () => {
@@ -842,7 +960,7 @@ $('#bye').addEventListener('click', () => {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   if (conn && conn.open) wake();
-  else if (dialed && !conn && !$('#fail').hidden) redial();
+  else if (dialed && !conn && !$('#fail').hidden && ui.fail[0] !== 'errRejected') redial(); // بعد الرفض ما نعيد الطلب تلقائيًا
 });
 addEventListener('pagehide', e => { if (!e.persisted && conn) conn.close(); }); // إغلاق نظيف يخبر الطرف الثاني فورًا
 addEventListener('beforeunload', e => {

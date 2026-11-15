@@ -25,6 +25,9 @@ with sync_playwright() as p:
     code = re.sub(r'\s', '', pa.inner_text('#code'))
     B = ctx(**iphone, locale='ar-SA')
     pb = B.new_page(); pb.goto(f'{ROOT}?r={code}&signal=127.0.0.1:9000')
+    pa.wait_for_selector('#ask[open]')
+    check('accept prompt in English', pa.inner_text('#askTitle') == '\u2068iPhone\u2069 wants to connect — accept?' and pa.inner_text('#askYes') == 'Accept', pa.inner_text('#askTitle'))
+    pa.click('#askYes')
     pb.wait_for_selector('#room:not([hidden])'); pa.wait_for_selector('#room:not([hidden])'); time.sleep(0.5)
     check('each device uses its own language', pa.inner_text('#peerName') == 'Connected to iPhone' and pb.inner_text('#peerName') == 'متصل بـ Linux',
           f"{pa.inner_text('#peerName')} | {pb.inner_text('#peerName')}")

@@ -22,7 +22,9 @@ with sync_playwright() as p:
     pa.wait_for_selector('#pair:not([hidden])'); code = pa.inner_text('#code').replace(' ', '').replace('\n', '')
     link = f'{ROOT}?r={code}&signal=127.0.0.1:9000'
     pb = ctx(**iphone).new_page(); pb.goto(link)
+    pa.wait_for_selector('#ask[open]'); pa.click('#askYes')
     pb.wait_for_selector('#room:not([hidden])'); pa.wait_for_selector('#room:not([hidden])')
+    pa.evaluate("() => { window.__asks = 0; new MutationObserver(() => { if (document.querySelector('#ask').open) window.__asks++; }).observe(document.querySelector('#ask'), {attributes: true}); }")
 
     # >100MB: declining the confirm sends nothing
     msgs = []
@@ -47,7 +49,7 @@ with sync_playwright() as p:
     check('phone wakes up → shows reconnect', 'انقطع' in pb.inner_text('#failMsg'))
     pb.click('#retry')
     pb.wait_for_selector('#room:not([hidden])', timeout=20000); pa.wait_for_selector('#room:not([hidden])', timeout=20000)
-    check('one tap reconnects', True)
+    check('one tap reconnects, auto-accepted without asking again', pa.evaluate('window.__asks') == 0, f"prompts: {pa.evaluate('window.__asks')}")
     br.close()
 print(f'{sum(res)}/{len(res)} passed')
 

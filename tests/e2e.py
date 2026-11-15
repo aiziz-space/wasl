@@ -31,6 +31,14 @@ HASHES = """async () => Promise.all([...document.querySelectorAll('#list .it.don
   return {name: li.querySelector('.nm').textContent, sha: h, len: buf.byteLength, dl: li.querySelector('a[download]').getAttribute('download'), thumb: !!li.querySelector('.th img')};
 }))"""
 vis = lambda pg, sel: pg.evaluate(f"!document.querySelector('{sel}').hidden")
+def approve(pg, timeout=20000):
+    pg.wait_for_selector('#ask[open]', timeout=timeout); pg.click('#askYes')
+asking = lambda pg: pg.evaluate("document.querySelector('#ask').open")
+# counts how many times the "accept?" dialog opens on a page
+ASKS = "() => { window.__asks = 0; new MutationObserver(() => { if (document.querySelector('#ask').open) window.__asks++; }).observe(document.querySelector('#ask'), {attributes: true}); }"
+# makes a phone never send its hi message (to test the 3s «جهاز» fallback)
+NO_HI = """(() => { const s = RTCDataChannel.prototype.send;
+  RTCDataChannel.prototype.send = function (d) { if (typeof d === 'string' && d.includes('"t":"hi"')) return; return s.call(this, d); }; })()"""
 
 with sync_playwright() as p:
     br = p.chromium.launch(executable_path=CHROME, args=ARGS)
@@ -63,9 +71,16 @@ with sync_playwright() as p:
     pb = page(B, 'PHONE')
     t0 = time.time()
     pb.goto(link or f'{ROOT}?r={code}&signal=127.0.0.1:9000')
+    pa.wait_for_selector('#ask[open]', timeout=20000)
+    check('PC asks before accepting, with the device name', pa.inner_text('#askTitle') == '\u2068iPhone\u2069 يبي يتصل — تقبل؟', pa.inner_text('#askTitle'))
+    check('focus is on «قبول»', pa.evaluate("document.activeElement.id") == 'askYes')
+    pb.wait_for_function("document.querySelector('#waitMsg').textContent.includes('بانتظار موافقة')", timeout=5000)
+    check('phone waits for approval, room hidden on both', not vis(pb, '#room') and not vis(pa, '#room'), pb.inner_text('#waitMsg'))
+    pa.screenshot(path=f'{SHOTS}/wasl_pc_ask.png')
+    pa.keyboard.press('Enter')
     pb.wait_for_selector('#room:not([hidden])', timeout=20000)
     pa.wait_for_selector('#room:not([hidden])', timeout=20000)
-    check('both devices connect', True, f'{time.time()-t0:.1f}s')
+    check('Enter accepts; both devices connect', not asking(pa), f'{time.time()-t0:.1f}s')
     time.sleep(0.5)
     check('PC sees device name', 'iPhone' in pa.inner_text('#peerName'), pa.inner_text('#peerName'))
     check('phone sees device name', 'Linux' in pb.inner_text('#peerName'), pb.inner_text('#peerName'))
@@ -99,6 +114,7 @@ with sync_playwright() as p:
     pc.goto(link)
     time.sleep(6)
     check('third device not admitted', not vis(pc, '#room'))
+    check('no prompt for the third device (busy as before)', not asking(pa))
     check('third device told why', vis(pc, '#fail') and 'جهاز ثالث' in pc.inner_text('#failMsg'), pc.inner_text('#failMsg') if vis(pc, '#fail') else 'no message')
     check('original pair still connected', vis(pa, '#room') and vis(pb, '#room'))
     C.close()
@@ -121,6 +137,7 @@ with sync_playwright() as p:
     pb2 = page(B, 'PHONE2')
     pb2.goto(link)
     try:
+        approve(pa)  # new tab = new session → asks again
         pb2.wait_for_selector('#room:not([hidden])', timeout=20000)
         pa.wait_for_selector('#room:not([hidden])', timeout=20000)
         pb2.set_input_files('#pick', f'{T}/ملف تجربة.txt')
@@ -184,8 +201,62 @@ with sync_playwright() as p:
     except Exception as e:
         check('text messages', False, str(e)[:160])
 
+    # same device comes back in the same session (reload keeps sessionStorage) → accepted without asking
+    try:
+        pa.evaluate(ASKS)
+        pb2.reload()
+        pb2.wait_for_selector('#room:not([hidden])', timeout=20000)
+        pa.wait_for_selector('#room:not([hidden])', timeout=20000)
+        check('returning device auto-accepted (no prompt)', pa.evaluate('window.__asks') == 0, f"prompts: {pa.evaluate('window.__asks')}")
+        n0 = pa.evaluate("document.querySelectorAll('#list .it.done').length")
+        pb2.set_input_files('#pick', f'{T}/from-phone.jpg')
+        pa.wait_for_function(f"document.querySelectorAll('#list .it.done').length > {n0}", timeout=20000)
+        check('transfer works after auto-accept', pa.evaluate(HASHES)[0]['sha'] == sha(back))
+    except Exception as e:
+        check('returning device auto-accepted (no prompt)', False, str(e)[:160])
+
+    # decline: nothing passes, the other side is told
+    E = ctx(viewport={'width': 1280, 'height': 900})
+    pe = page(E, 'PC2')
+    pe.goto(BASE); pe.wait_for_selector('#pair:not([hidden])', timeout=15000)
+    code2 = pe.inner_text('#code').replace(' ', '').replace('\n', '')
+    F = ctx(**iphone)
+    F.add_init_script(NO_HI)
+    pf = page(F, 'PHONE3')
+    try:
+        pf.goto(f'{ROOT}?r={code2}&signal=127.0.0.1:9000')
+        pf.wait_for_function("document.querySelector('#waitMsg').textContent.includes('بانتظار')", timeout=20000)
+        t0 = time.time()
+        pf.set_input_files('#pick', f'{T}/from-phone.jpg')  # tries to send before being accepted
+        pf.evaluate("() => { document.querySelector('#msg').value = 'نص قبل القبول'; document.querySelector('#say').requestSubmit(); }")
+        pe.wait_for_selector('#ask[open]', timeout=10000)
+        check('no hi → prompt after ~3s says «جهاز»', pe.inner_text('#askTitle') == 'جهاز يبي يتصل — تقبل؟' and time.time() - t0 > 2, f"{pe.inner_text('#askTitle')} after {time.time()-t0:.1f}s")
+        pe.click('#askNo')
+        pf.wait_for_selector('#fail:not([hidden])', timeout=10000)
+        check('decline reaches the other side', 'الجهاز الثاني رفض الاتصال' in pf.inner_text('#failMsg'), pf.inner_text('#failMsg'))
+        pf.screenshot(path=f'{SHOTS}/wasl_phone_rejected.png')
+        time.sleep(1)
+        check('nothing transferred; PC back to QR', pe.evaluate("document.querySelectorAll('#list .it').length") == 0 and vis(pe, '#pair') and not vis(pe, '#room'))
+
+        pf.click('#retry')
+        pe.wait_for_selector('#ask[open]', timeout=15000)
+        pe.keyboard.press('Escape')
+        pf.wait_for_selector('#fail:not([hidden])', timeout=10000)
+        check('Esc declines', 'رفض' in pf.inner_text('#failMsg') and not asking(pe))
+
+        pf.click('#retry')
+        pe.wait_for_selector('#ask[open]', timeout=15000)
+        t0 = time.time()
+        pf.wait_for_selector('#fail:not([hidden])', timeout=45000)
+        dt = time.time() - t0
+        check('no answer for 30s → declined (heartbeat kept it alive meanwhile)', 'رفض' in pf.inner_text('#failMsg') and 28 < dt < 36 and not asking(pe), f'{dt:.1f}s')
+        check('still nothing transferred', pe.evaluate("document.querySelectorAll('#list .it').length") == 0)
+    except Exception as e:
+        check('decline flow', False, str(e)[:160])
+    E.close(); F.close()
+
     # wrong code
-    D =ctx(**iphone, color_scheme='dark')
+    D = ctx(**iphone, color_scheme='dark')
     pd = page(D, 'DARK')
     pd.goto(BASE)
     pd.wait_for_selector('#pair:not([hidden])', timeout=15000)
