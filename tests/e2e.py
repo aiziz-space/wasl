@@ -36,6 +36,7 @@ with sync_playwright() as p:
     br = p.chromium.launch(executable_path=CHROME, args=ARGS)
     iphone = {k: v for k, v in p.devices['iPhone 13'].items() if k != 'default_browser_type'}
     def ctx(**kw):
+        kw.setdefault('locale', 'ar-SA')
         c = br.new_context(**kw)
         c.route(re.compile(r'fonts\.(googleapis|gstatic)\.com'), lambda r: r.abort())
         return c
@@ -50,7 +51,7 @@ with sync_playwright() as p:
     pa = page(A, 'PC')
     pa.goto(BASE)
     pa.wait_for_selector('#pair:not([hidden])', timeout=15000)
-    code = pa.inner_text('#code').replace(' ', '')
+    code = pa.inner_text('#code').replace(' ', '').replace('\n', '')
     check('host shows 6-char code', re.fullmatch(r'[a-z0-9]{6}', code), code)
     pa.screenshot(path=f'{SHOTS}/wasl_pc_pair.png', full_page=True)
     pa.locator('#qr').screenshot(path=f'{T}/qr.png')
@@ -115,7 +116,7 @@ with sync_playwright() as p:
         check('PC detects disconnect, shows QR again', vis(pa, '#pairNote'), f'{time.time()-t0:.1f}s')
     except Exception as e:
         check('PC detects disconnect, shows QR again', False, str(e)[:80])
-    check('PC keeps code after disconnect', pa.inner_text('#code').replace(' ', '') == code)
+    check('PC keeps code after disconnect', pa.inner_text('#code').replace(' ', '').replace('\n', '') == code)
     check('PC keeps received files list', pa.evaluate("document.querySelectorAll('#list .it').length") >= 5)
     pb2 = page(B, 'PHONE2')
     pb2.goto(link)
