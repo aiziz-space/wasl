@@ -13,4 +13,5 @@ trap 'kill $P1 $P2 2>/dev/null' EXIT
 sleep 2
 WASL_URL=http://localhost:8080/ python3 tests/e2e.py
 WASL_URL=http://localhost:8080/ python3 tests/extra.py
+WASL_URL=http://localhost:8080/ python3 tests/lang.py
 echo "ALL TESTS PASSED (screenshots in ${WASL_SHOTS:-/tmp})"

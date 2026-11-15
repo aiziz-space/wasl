@@ -23,13 +23,15 @@ Abdulaziz (GitHub `aiziz-space`). Arabic speaker, mid-level technical, learning 
 - `pagehide` closes the connection cleanly; `beforeunload` warns if unsaved files exist; Wake Lock keeps the screen on while connected.
 
 ## Conventions
-- UI text is Arabic (simple, Saudi-friendly), `dir="rtl"`. Wrap numbers/sizes with `fmt()` (LRI/PDI isolates) so they don't flip inside Arabic text.
+- Bilingual UI: every string lives in the `I18N` object (`ar` + `en`, same keys). Static text uses `data-i18n` / `data-i18n-ph` / `data-i18n-aria`; dynamic text goes through `t(key, params)` and is stored (`ui`, item `st`) so `applyLang()` can re-render it. Language = saved choice (`localStorage` `wasl-lang`) → else Arabic if the browser lists Arabic → else English. `dir` switches rtl/ltr; use logical CSS properties. Arabic copy is simple and Saudi-friendly. Add every new string in both languages.
+- Wrap numbers/sizes with `fmt()` (LRI/PDI isolates) so they don't flip inside Arabic text.
+- Look: Alexandria (headings) + IBM Plex Sans Arabic (text), one royal-blue accent, graphite dark / paper light themes via CSS variables in `:root`.
 - Anything that comes from the other device (file names, device name) goes into the DOM via `textContent`, never `innerHTML`.
 - Keep it a single static page with no build tools or frameworks unless the owner asks. Light and dark themes via `prefers-color-scheme`. Must work on iOS Safari 16+ (no `light-dark()`).
 - Short English commit messages.
 
 ## Testing
-`bash tests/run.sh` starts a local PeerServer (127.0.0.1:9000) and a static server (:8080), then drives two headless Chrome contexts (desktop + iPhone emulation). Covers: QR decodes to the right link, pairing, SHA-256 match in both directions (6 MB, empty, Arabic file name, image), save-link file names, delivery acks, third device refused with a message, item removal, disconnect + reconnect, wrong code, >100 MB confirm, 120 MB transfer, heartbeat detection of a stalled phone. Needs node/npm, python3, `pip install playwright opencv-python-headless numpy`, and Chrome (or `playwright install chromium`).
+`bash tests/run.sh` starts a local PeerServer (127.0.0.1:9000) and a static server (:8080), then drives two headless Chrome contexts (desktop + iPhone emulation). Covers: QR decodes to the right link, pairing, SHA-256 match in both directions (6 MB, empty, Arabic file name, image), save-link file names, delivery acks, third device refused with a message, item removal, disconnect + reconnect, wrong code, >100 MB confirm, 120 MB transfer, heartbeat detection of a stalled phone; `tests/lang.py` covers language detection, the toggle, re-rendering live texts, persistence and no sideways scroll on phones. Tests run Chrome with locale `ar-SA` unless they set another. Needs node/npm, python3, `pip install playwright opencv-python-headless numpy`, and Chrome (or `playwright install chromium`).
 Not covered: real iOS/Android devices and the public PeerJS server — say so when reporting.
 
 ## Ideas discussed, not built yet

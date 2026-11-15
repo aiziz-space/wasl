@@ -5,109 +5,195 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>وصل — انقل ملفاتك بين الجوال والكمبيوتر</title>
 <meta name="description" content="انقل الصور والملفات بين جوالك وكمبيوترك على نفس الواي فاي. امسح رمز وخلاص — بدون تطبيق وبدون حساب.">
-<meta name="theme-color" content="#0a5cff">
+<meta name="theme-color" content="#0b0d11" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* وصل — نقل ملفات مباشر بين جهازين (WebRTC). ملف واحد، يرفع على أي استضافة ثابتة. */
-:root{--bg:#fff;--ink:#0e1116;--mute:#5b6472;--line:#e1e5eb;--panel:#f3f5f8;--blue:#0a5cff;--green:#00a05a;--red:#e6261f;color-scheme:light dark}
-@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--ink:#eef1f5;--mute:#9aa4b2;--line:#262c36;--panel:#161b22;--blue:#4d8bff}}
+/* VOICE: هادئ وواثق ودقيق — أداة فاخرة بدون زخرفة زايدة
+   IDEA: جسر بين جهازين — نقطتين يربطهم قوس (الشعار نفسه)
+   PICTURE: رمز QR داخل إطار مضيء بزوايا مسح، وخانات الرمز كأنها لوحة
+   COLOUR/TYPE: ليل جرافيتي / نهار ورقي، لون أزرق ملكي واحد؛ Alexandria للعناوين و IBM Plex Sans Arabic للنص
+   LAYOUT: شريط علوي، عنوان، بطاقة رئيسية واحدة، الملفات، كيف يشتغل بأيقونات، أسئلة، تذييل */
+:root{
+  --bg:#f5f6f8;--bg2:#eceef2;--card:#fff;--ink:#0c0e13;--mute:#5d6573;
+  --line:rgba(12,14,19,.08);--line2:rgba(12,14,19,.15);
+  --acc:#2f63ff;--acc2:#7b9bff;--ok:#0a9e62;--bad:#d93a2b;--glow:rgba(47,99,255,.16);
+  --shadow:0 1px 2px rgba(12,14,19,.04),0 18px 50px -20px rgba(12,14,19,.16);
+  --display:"Alexandria","IBM Plex Sans Arabic",system-ui,sans-serif;
+  color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0b0d11;--bg2:#161a22;--card:#12151c;--ink:#eef0f4;--mute:#959cab;
+  --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.14);
+  --acc:#5b84ff;--acc2:#9db3ff;--ok:#34d399;--bad:#ff6b5b;--glow:rgba(91,132,255,.20);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.04),0 30px 80px -30px rgba(0,0,0,.7)}}
 *{box-sizing:border-box;min-width:0}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;overflow-x:clip}
+body{margin:0;color:var(--ink);font:16px/1.65 "IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;overflow-x:clip;
+  background:radial-gradient(900px 520px at 50% -160px,var(--glow),transparent 70%),var(--bg);background-repeat:no-repeat;min-height:100vh}
 [hidden]{display:none!important}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.wrap{max-width:980px;margin:0 auto;padding:0 max(5vw,16px) 40px}
-header{padding:28px 0 4px}
-.logo{font-size:44px;font-weight:700;line-height:1;margin:0}
-.logo i{color:var(--blue);font-style:normal}
-.tag{margin:10px 0 0;color:var(--mute);max-width:60ch}
-.stage{margin:22px 0;border:1px solid var(--line);border-radius:22px;padding:clamp(18px,4vw,36px);background:var(--panel)}
-h2{font-size:clamp(24px,4vw,32px);line-height:1.2;margin:0 0 8px;text-wrap:balance}
-h3{font-size:20px;margin:0 0 12px}
-.lead{margin:0 0 18px;color:var(--mute)}
-.small{font-size:14px;color:var(--mute);margin:0 0 6px}
-.pair{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(20px,4vw,48px);align-items:center}
-.qr{width:min(300px,76vw);aspect-ratio:1;background:#fff;border-radius:18px;padding:8px;box-shadow:0 0 0 1px var(--line),0 18px 40px -20px rgba(10,92,255,.55)}
-.qr svg{display:block;width:100%;height:100%}
-.code{display:inline-block;direction:ltr;font:700 30px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.14em;margin:6px 0 18px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 max(5vw,16px) 48px}
+svg{flex:none}
+/* شريط علوي */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px 0}
+.brand{display:flex;align-items:center;gap:10px;font:700 26px/1 var(--display);letter-spacing:-.01em}
+.brand i{color:var(--acc);font-style:normal}
+.mark{width:34px;height:34px}
+.pill{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--ink);font-family:inherit;font-weight:500;font-size:14px;line-height:1;cursor:pointer;box-shadow:var(--shadow)}
+.pill svg{width:16px;height:16px;color:var(--mute)}
+.pill:hover{border-color:var(--acc)}
+/* العنوان */
+.hero{padding:clamp(18px,4vw,40px) 0 clamp(18px,3vw,28px);max-width:720px}
+h1{font:700 clamp(30px,5vw,48px)/1.12 var(--display);margin:0;letter-spacing:-.015em;text-wrap:balance}
+.tag{margin:14px 0 0;color:var(--mute);font-size:17px;max-width:58ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;padding:0;list-style:none}
+.chips li{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:14px;color:var(--mute)}
+.chips svg{width:15px;height:15px;color:var(--acc)}
+/* البطاقة الرئيسية */
+.stage{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:clamp(20px,4vw,44px);box-shadow:var(--shadow)}
+h2{font:600 clamp(22px,3.2vw,30px)/1.25 var(--display);margin:0 0 8px;text-wrap:balance}
+h3{font:600 20px/1.3 var(--display);margin:0}
+.lead{margin:0 0 22px;color:var(--mute)}
+.small{font-size:14px;color:var(--mute);margin:0 0 8px}
+.note{display:inline-block;margin:0 0 14px;padding:6px 12px;border-radius:10px;background:var(--glow);color:var(--ink);font-size:14px}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(28px,5vw,64px);align-items:center}
+.or{display:flex;align-items:center;gap:12px;color:var(--mute);font-size:14px;margin:4px 0 12px}
+.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.code{display:inline-flex;gap:6px;direction:ltr;margin:0 0 18px}
+.code b{display:grid;place-items:center;width:clamp(36px,9vw,44px);height:52px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);font:600 24px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-transform:lowercase}
+.code b:nth-child(3){margin-inline-end:10px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-input[type=text]{font:inherit;font-size:17px;height:48px;width:11em;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);direction:ltr;text-align:center;letter-spacing:.12em}
-button,.btn{font:inherit;font-weight:600;font-size:16px;min-height:44px;padding:0 18px;border-radius:12px;border:0;background:var(--blue);color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
-button{height:48px}
-.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
-:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.center{display:grid;justify-items:center;gap:14px;padding:48px 0;text-align:center}
-.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:r .9s linear infinite}
+input[type=text]{font:inherit;font-size:17px;height:50px;width:13em;max-width:100%;padding:0 16px;border:1px solid var(--line2);border-radius:14px;background:var(--bg);color:var(--ink);direction:ltr;text-align:center;letter-spacing:.12em}
+input[type=text]::placeholder{letter-spacing:0;color:var(--mute)}
+input[type=text]:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 4px var(--glow)}
+button,.btn{font-family:inherit;font-weight:600;font-size:16px;line-height:1;min-height:44px;height:50px;padding:0 22px;border-radius:14px;border:0;background:var(--acc);color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;white-space:nowrap;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 24px -12px var(--acc);transition:filter .15s,transform .15s}
+button:hover,.btn:hover{filter:brightness(1.07)}
+button:active,.btn:active{transform:translateY(1px)}
+.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+/* إطار QR */
+.qrwrap{position:relative;justify-self:center;padding:14px}
+.qrwrap::before{content:"";position:absolute;inset:-12%;background:radial-gradient(closest-side,var(--glow),transparent);z-index:0}
+.qr{position:relative;z-index:1;width:min(272px,70vw);aspect-ratio:1;background:#fff;border-radius:22px;padding:10px;box-shadow:0 0 0 1px var(--line2),0 26px 60px -26px rgba(47,99,255,.6)}
+.qr svg{display:block;width:100%;height:100%}
+.cn{position:absolute;z-index:2;width:30px;height:30px;border:3px solid var(--acc);pointer-events:none}
+.cn.a{top:0;left:0;border-right:0;border-bottom:0;border-top-left-radius:14px}
+.cn.b{top:0;right:0;border-left:0;border-bottom:0;border-top-right-radius:14px}
+.cn.c{bottom:0;left:0;border-right:0;border-top:0;border-bottom-left-radius:14px}
+.cn.d{bottom:0;right:0;border-left:0;border-top:0;border-bottom-right-radius:14px}
+/* انتظار */
+.center{display:grid;justify-items:center;gap:16px;padding:56px 0;text-align:center;color:var(--mute)}
+.spin{width:42px;height:42px;border:3px solid var(--line2);border-top-color:var(--acc);border-radius:50%;animation:r .9s linear infinite}
 @keyframes r{to{transform:rotate(360deg)}}
-.status{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-weight:600}
-.status .ghost{margin-inline-start:auto;height:40px;font-size:14px}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 0 5px rgba(0,160,90,.18)}
-.drop{display:grid;place-items:center;align-content:center;gap:8px;min-height:260px;margin-top:18px;padding:24px;text-align:center;border:2px dashed var(--line);border-radius:18px;background:var(--bg);cursor:pointer;transition:border-color .15s,background-color .15s}
-.drop:hover,.drop.on{border-color:var(--blue);background:rgba(10,92,255,.06)}
-.drop:focus-within{outline:3px solid var(--blue);outline-offset:2px}
-.drop svg{width:56px;height:56px;color:var(--blue)}
-.drop b{font-size:20px}
-.tips{margin:12px 0 20px;padding-inline-start:20px}
-.tips li{margin:6px 0}
-.files ul{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:10px}
-.it{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px}
-.th{width:56px;height:56px;border-radius:10px;background:var(--panel);display:grid;place-items:center;overflow:hidden;color:var(--blue);font-size:22px;font-weight:700}
+/* الغرفة */
+.status{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.live{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 16px;border-radius:999px;background:var(--bg2);font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:p 2.4s ease-out infinite}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(10,158,98,.45)}70%,100%{box-shadow:0 0 0 9px rgba(10,158,98,0)}}
+.status .ghost{margin-inline-start:auto;height:40px;font-size:14px;padding:0 16px}
+.drop{display:grid;place-items:center;align-content:center;gap:10px;min-height:280px;margin-top:20px;padding:28px;text-align:center;border:1.5px dashed var(--line2);border-radius:22px;cursor:pointer;
+  background:linear-gradient(180deg,transparent,var(--glow));transition:border-color .2s,background-color .2s}
+.drop:hover,.drop.on{border-color:var(--acc);background-color:var(--glow)}
+.drop:focus-within{outline:3px solid var(--acc);outline-offset:3px}
+.ico{display:grid;place-items:center;width:68px;height:68px;border-radius:20px;background:var(--acc);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 16px 32px -14px var(--acc)}
+.ico svg{width:32px;height:32px}
+.drop b{font:600 20px/1.35 var(--display);margin-top:6px}
+.drop .small{max-width:46ch;margin:0}
+/* فشل */
+.fail{display:grid;gap:6px}
+.warn{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:rgba(217,58,43,.12);color:var(--bad);margin-bottom:8px}
+.warn svg{width:26px;height:26px}
+.tips{list-style:none;margin:10px 0 22px;padding:0;display:grid;gap:10px}
+.tips li{position:relative;padding-inline-start:28px;color:var(--mute)}
+.tips li::before{content:"";position:absolute;inset-inline-start:0;top:.55em;width:14px;height:14px;border-radius:50%;border:2px solid var(--acc)}
+/* الملفات */
+.files{margin-top:28px}
+.fhead{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.count{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:var(--bg2);font-size:13px;font-weight:600}
+.files ul{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px}
+.it{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.th{width:56px;height:56px;border-radius:14px;background:var(--bg2);display:grid;place-items:center;overflow:hidden;color:var(--acc)}
+.th svg{width:24px;height:24px}
 .th a,.th img{display:block;width:100%;height:100%;object-fit:cover}
-.nm{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext;text-align:right}
+.nm{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext}
+html[dir=rtl] .nm{text-align:right}html[dir=ltr] .nm{text-align:left}
 .sz{font-size:13px;color:var(--mute)}
-.bar{height:4px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .2s}
+.bar{height:4px;background:var(--bg2);border-radius:4px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px;transition:width .2s}
 .it.done .bar{display:none}
-.it.done .sz{color:var(--green)}
-.it.bad .sz{color:var(--red)}
+.it.done .sz{color:var(--ok)}
+.it.bad .sz{color:var(--bad)}
 .act{display:flex;gap:8px;align-items:center}
-.x{width:44px;height:44px;padding:0;background:transparent;color:var(--mute);box-shadow:inset 0 0 0 1px var(--line);font-size:20px}
-.how{margin-top:36px}
-.steps{list-style:none;padding:0;margin:0 0 20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:s}
-.steps li{padding:16px;border:1px solid var(--line);border-radius:14px;counter-increment:s}
-.steps li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;margin-bottom:8px}
-.steps b{display:block}
+.act .btn{height:44px;padding:0 18px;font-size:15px}
+.x{width:44px;height:44px;padding:0;background:transparent;color:var(--mute);box-shadow:inset 0 0 0 1px var(--line2);font-size:20px}
+/* كيف يشتغل */
+.how{margin-top:56px}
+.how>h3{margin-bottom:16px}
+.steps{list-style:none;padding:0;margin:0 0 28px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.steps li{padding:22px;background:var(--card);border:1px solid var(--line);border-radius:20px}
+.si{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--glow);color:var(--acc);margin-bottom:14px}
+.si svg{width:22px;height:22px}
+.steps b{display:block;font:600 17px/1.4 var(--display);margin-bottom:4px}
 .steps span{color:var(--mute);font-size:15px}
-details{border-top:1px solid var(--line);padding:12px 0}
-summary{cursor:pointer;font-weight:600;min-height:28px}
-details p,details ul{color:var(--mute);margin:8px 0 0}
-footer{margin-top:28px}
-@media(max-width:720px){
-  .pair{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}
-  .pair .row{justify-content:center}
+details{border-top:1px solid var(--line);padding:16px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:28px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:400 24px/1 var(--display);color:var(--mute);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p,details ul{color:var(--mute);margin:10px 0 0}
+details ul{padding-inline-start:20px}
+footer{margin-top:36px;padding-top:20px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;color:var(--mute);font-size:14px}
+@media(max-width:760px){
+  .pair{grid-template-columns:minmax(0,1fr)}
   .steps{grid-template-columns:minmax(0,1fr)}
-  .drop{min-height:200px}
+  .drop{min-height:220px}
+  .stage{border-radius:24px}
 }
-@media(prefers-reduced-motion:reduce){.spin{animation:none}.bar i,.drop{transition:none}}
+@media(prefers-reduced-motion:reduce){.spin,.dot{animation:none}.bar i,.drop,button,.btn,summary::after{transition:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-  <p class="logo">وصل<i>.</i></p>
-  <p class="tag">انقل الصور والملفات بين جوالك وكمبيوترك على نفس الواي فاي. بدون تطبيق وبدون حساب.</p>
+<header class="top">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 34 34" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--acc)"/><stop offset="1" style="stop-color:var(--acc2)"/></linearGradient></defs><rect width="34" height="34" rx="10" fill="url(#g)"/><path d="M9 22c2.5-9 13.5-9 16 0" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="2.4" stroke-linecap="round"/><circle cx="9" cy="22.5" r="3.4" fill="#fff"/><circle cx="25" cy="22.5" r="3.4" fill="#fff"/></svg>
+    <span><span data-i18n="brand">وصل</span><i>.</i></span>
+  </div>
+  <button class="pill" id="lang" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg><span data-i18n="langBtn">English</span></button>
 </header>
+
+<section class="hero">
+  <h1 data-i18n="hero">انقل ملفاتك بين جوالك وكمبيوترك.</h1>
+  <p class="tag" data-i18n="tag">امسح رمز واسحب الملفات. تنتقل مباشرة من جهاز لجهاز على نفس الواي فاي.</p>
+  <ul class="chips">
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="chip1">بدون تطبيق</span></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span data-i18n="chip2">بدون حساب</span></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-i18n="chip3">مشفّر من جهاز لجهاز</span></li>
+  </ul>
+</section>
 
 <main class="stage" aria-live="polite">
   <section id="pair" hidden>
     <div class="pair">
       <div>
-        <h2>امسح الرمز بكاميرا الجوال</h2>
-        <p class="lead">وجّه الكاميرا على الرمز وافتح الرابط اللي يطلع لك. يتصل الجهازان مباشرة.</p>
-        <p class="small" id="pairNote" hidden>انقطع الاتصال. امسح الرمز مرة ثانية للرجوع.</p>
-        <p class="small">أو اكتب رمز هذا الجهاز في الجهاز الثاني:</p>
-        <span class="code" id="code">••• •••</span>
+        <h2 data-i18n="scanTitle">امسح الرمز بكاميرا الجوال</h2>
+        <p class="lead" data-i18n="scanLead">وجّه الكاميرا على الرمز وافتح الرابط اللي يطلع لك. يتصل الجهازان مباشرة.</p>
+        <p class="note" id="pairNote" hidden data-i18n="pairNote">انقطع الاتصال. امسح الرمز مرة ثانية للرجوع.</p>
+        <div class="or" data-i18n="orCode">أو اكتب رمز هذا الجهاز في الجهاز الثاني</div>
+        <div class="code" id="code" aria-live="off"><b>•</b><b>•</b><b>•</b><b>•</b><b>•</b><b>•</b></div>
         <form id="join" class="row" autocomplete="off">
-          <label class="vh" for="codeIn">رمز الجهاز الثاني</label>
-          <input id="codeIn" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="رمز الجهاز الثاني" maxlength="14">
-          <button type="submit">اتصل</button>
-          <button type="button" class="ghost" id="copy">نسخ الرابط</button>
+          <label class="vh" for="codeIn" data-i18n="codePh">رمز الجهاز الثاني</label>
+          <input id="codeIn" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="رمز الجهاز الثاني" data-i18n-ph="codePh" maxlength="14">
+          <button type="submit" data-i18n="connect">اتصل</button>
+          <button type="button" class="ghost" id="copy" data-i18n="copy">نسخ الرابط</button>
         </form>
-        <p class="small" id="mobileHint" hidden>على الجوال؟ افتح الموقع في الكمبيوتر وامسح الرمز اللي يطلع هناك، أو اكتب رمزه هنا.</p>
+        <p class="small" id="mobileHint" hidden data-i18n="mobileHint" style="margin-top:14px">على الجوال؟ افتح الموقع في الكمبيوتر وامسح الرمز اللي يطلع هناك، أو اكتب رمزه هنا.</p>
       </div>
-      <div class="qr" id="qr" role="img" aria-label="رمز QR للربط"></div>
+      <div class="qrwrap"><span class="cn a"></span><span class="cn b"></span><span class="cn c"></span><span class="cn d"></span><div class="qr" id="qr" role="img" aria-label="رمز QR للربط" data-i18n-aria="qrAria"></div></div>
     </div>
   </section>
 
@@ -116,52 +202,55 @@ footer{margin-top:28px}
   </section>
 
   <section id="room" hidden>
-    <div class="status"><span class="dot"></span><span id="peerName">متصل</span><button class="ghost" id="bye" type="button">قطع الاتصال</button></div>
+    <div class="status"><span class="live"><span class="dot"></span><span id="peerName">متصل</span></span><button class="ghost" id="bye" type="button" data-i18n="bye">قطع الاتصال</button></div>
     <label class="drop" id="drop">
       <input class="vh" id="pick" type="file" multiple>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5"/><path d="M3 14v4a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-4"/></svg>
-      <b>اسحب الملفات هنا أو اضغط للاختيار</b>
-      <span class="small">صور، فيديو، مستندات — أي ملف، وأكثر من ملف مرة وحدة. في الكمبيوتر تقدر تلصق صورة بـ Ctrl+V.</span>
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 14v3.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V14"/></svg></span>
+      <b data-i18n="dropTitle">اسحب الملفات هنا أو اضغط للاختيار</b>
+      <span class="small" data-i18n="dropSub">صور، فيديو، مستندات — أي ملف، وأكثر من ملف مرة وحدة. في الكمبيوتر تقدر تلصق صورة بـ Ctrl+V.</span>
     </label>
   </section>
 
   <section id="fail" hidden>
-    <h2 id="failMsg">ما قدرنا نتصل.</h2>
+    <div class="fail">
+      <span class="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg></span>
+      <h2 id="failMsg">ما قدرنا نتصل.</h2>
+    </div>
     <ul class="tips" id="tips">
-      <li>تأكد إن الجهازين على نفس شبكة الواي فاي (مو بيانات الجوال).</li>
-      <li>شبكات الضيوف والفنادق والمقاهي والشركات أحيانًا تعزل الأجهزة عن بعض. جرّب شبكة البيت، أو وصّل الكمبيوتر بنقطة اتصال الجوال.</li>
-      <li>طفّ الـVPN في الجهازين.</li>
-      <li>في ويندوز: خلّ نوع الشبكة «خاصة» مو «عامة».</li>
-      <li>خلّ الشاشتين شغالة. الجوال يوقف الصفحات اللي في الخلفية.</li>
+      <li data-i18n="tip1">تأكد إن الجهازين على نفس شبكة الواي فاي (مو بيانات الجوال).</li>
+      <li data-i18n="tip2">شبكات الضيوف والفنادق والمقاهي والشركات أحيانًا تعزل الأجهزة عن بعض. جرّب شبكة البيت، أو وصّل الكمبيوتر بنقطة اتصال الجوال.</li>
+      <li data-i18n="tip3">طفّ الـVPN في الجهازين.</li>
+      <li data-i18n="tip4">في ويندوز: خلّ نوع الشبكة «خاصة» مو «عامة».</li>
+      <li data-i18n="tip5">خلّ الشاشتين شغالة. الجوال يوقف الصفحات اللي في الخلفية.</li>
     </ul>
-    <div class="row"><button id="retry" type="button">حاول مرة ثانية</button></div>
+    <div class="row"><button id="retry" type="button" data-i18n="retry">حاول مرة ثانية</button></div>
   </section>
 </main>
 
 <section class="files" id="files" hidden>
-  <h3>الملفات</h3>
-  <p class="small">احفظ الملفات أول ما توصل. تنمسح إذا قفلت الصفحة.<span id="iosHint" hidden> في الآيفون: اضغط على الصورة ثم اضغط عليها مطوّلًا واختر «إضافة إلى الصور».</span></p>
+  <div class="fhead"><h3 data-i18n="files">الملفات</h3><span class="count" id="fcount">0</span></div>
+  <p class="small"><span data-i18n="filesNote">احفظ الملفات أول ما توصل. تنمسح إذا قفلت الصفحة.</span> <span id="iosHint" hidden data-i18n="iosHint">في الآيفون: اضغط على الصورة ثم اضغط عليها مطوّلًا واختر «إضافة إلى الصور».</span></p>
   <ul id="list"></ul>
 </section>
 
 <section class="how">
-  <h3>كيف يشتغل</h3>
+  <h3 data-i18n="how">كيف يشتغل</h3>
   <ol class="steps">
-    <li><b>نفس الشبكة</b><span>وصّل الجهازين على نفس الواي فاي.</span></li>
-    <li><b>امسح الرمز</b><span>افتح الموقع في جهاز وامسح الرمز بكاميرا الثاني.</span></li>
-    <li><b>ارمِ الملفات</b><span>اسحب أو اختر الملفات في أي جهاز، توصل للثاني.</span></li>
+    <li><span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M2.5 9a14 14 0 0 1 19 0M5.8 12.4a9.3 9.3 0 0 1 12.4 0M9.2 15.8a4.6 4.6 0 0 1 5.6 0"/><circle cx="12" cy="19.3" r="1.2" fill="currentColor" stroke="none"/></svg></span><b data-i18n="s1t">نفس الشبكة</b><span data-i18n="s1">وصّل الجهازين على نفس الواي فاي.</span></li>
+    <li><span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 8.5V5.5A1.5 1.5 0 0 1 5.5 4h3M15.5 4h3A1.5 1.5 0 0 1 20 5.5v3M20 15.5v3a1.5 1.5 0 0 1-1.5 1.5h-3M8.5 20h-3A1.5 1.5 0 0 1 4 18.5v-3M7 12h10"/></svg></span><b data-i18n="s2t">امسح الرمز</b><span data-i18n="s2">افتح الموقع في جهاز وامسح الرمز بكاميرا الثاني.</span></li>
+    <li><span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6m0 0-2.5 2.5M12 12l2.5 2.5"/></svg></span><b data-i18n="s3t">ارمِ الملفات</b><span data-i18n="s3">اسحب أو اختر الملفات في أي جهاز، توصل للثاني.</span></li>
   </ol>
-  <details><summary>ما اتصل؟</summary><ul>
-    <li>نفس شبكة الواي فاي، والـVPN مطفي، والشاشتين شغالة.</li>
-    <li>شبكات الضيوف والشركات غالبًا تعزل الأجهزة. نقطة اتصال الجوال حل سريع.</li>
-    <li>ويندوز: نوع الشبكة لازم يكون «خاصة».</li>
+  <details><summary data-i18n="q1">ما اتصل؟</summary><ul>
+    <li data-i18n="q1a">نفس شبكة الواي فاي، والـVPN مطفي، والشاشتين شغالة.</li>
+    <li data-i18n="q1b">شبكات الضيوف والشركات غالبًا تعزل الأجهزة. نقطة اتصال الجوال حل سريع.</li>
+    <li data-i18n="q1c">ويندوز: نوع الشبكة لازم يكون «خاصة».</li>
   </ul></details>
-  <details><summary>هل ملفاتي تمر على سيرفر؟</summary><p>لا. خادم الربط يمرر بيانات الاتصال الأولية فقط (رمز الجهاز وعناوين الشبكة)، والملفات نفسها تنتقل مباشرة بين الجهازين عبر WebRTC بقناة مشفّرة. ما فيه خادم وسيط ينقل الملفات، وما يُحفظ شيء.</p></details>
-  <details><summary>فيه حد لحجم الملف؟</summary><p>ما فيه حد ثابت. لكن الجهاز المستقبل يحتفظ بالملف في الذاكرة لين تحفظه، فالملفات فوق 100MB نطلب تأكيدك قبل إرسالها.</p></details>
-  <details><summary>يشتغل على وش؟</summary><p>أي جهازين بمتصفح حديث: آيفون، أندرويد، ماك، ويندوز. جوال↔كمبيوتر، جوال↔جوال، أو كمبيوتر↔كمبيوتر.</p></details>
+  <details><summary data-i18n="q2">هل ملفاتي تمر على سيرفر؟</summary><p data-i18n="a2">لا. خادم الربط يمرر بيانات الاتصال الأولية فقط (رمز الجهاز وعناوين الشبكة)، والملفات نفسها تنتقل مباشرة بين الجهازين عبر WebRTC بقناة مشفّرة. ما فيه خادم وسيط ينقل الملفات، وما يُحفظ شيء.</p></details>
+  <details><summary data-i18n="q3">فيه حد لحجم الملف؟</summary><p data-i18n="a3">ما فيه حد ثابت. لكن الجهاز المستقبل يحتفظ بالملف في الذاكرة لين تحفظه، فالملفات فوق 100MB نطلب تأكيدك قبل إرسالها.</p></details>
+  <details><summary data-i18n="q4">يشتغل على وش؟</summary><p data-i18n="a4">أي جهازين بمتصفح حديث: آيفون، أندرويد، ماك، ويندوز. جوال↔كمبيوتر، جوال↔جوال، أو كمبيوتر↔كمبيوتر.</p></details>
 </section>
 
-<footer><p class="small">يتصل الجهاز بجهاز واحد في نفس الوقت. الرمز يتغير إذا فتحت الموقع في تبويب جديد.</p></footer>
+<footer><span data-i18n="foot">يتصل الجهاز بجهاز واحد في نفس الوقت. الرمز يتغير إذا فتحت الموقع في تبويب جديد.</span><span><span data-i18n="brand">وصل</span> · 2026</span></footer>
 </div>
 
 <script src="vendor/peerjs.min.js"></script>
@@ -170,7 +259,7 @@ footer{margin-top:28px}
 {
 // ===== الإعدادات =====
 const CFG = {
-  prefix: 'aziz-bn5vd-',        // يميّز رموزك على خادم الربط المشترك. غيّره لكلمة خاصة فيك.
+  prefix: 'aziz-bn5vd-',  // يميّز رموزك على خادم الربط المشترك. غيّره لكلمة خاصة فيك.
   server: null,           // null = خادم PeerJS المجاني. أو خادمك: {host:'peer.example.com', port:443, path:'/', secure:true}
   chunk: 64 * 1024,       // حجم القطعة الواحدة
   high: 1024 * 1024,      // نوقف القراءة إذا تكدّس أكثر من 1MB في القناة
@@ -180,6 +269,114 @@ const CFG = {
   ice: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } // STUN فقط: ما فيه TURN، يعني الملف ما يمر على أي خادم
 };
 
+// ===== النصوص (عربي / English) =====
+const BIG_AR = p => (p.n > 1 ? p.n + ' ملفات أكبر' : 'ملف أكبر') + ' من 100MB. الجهاز الثاني يحتفظ بالملف في الذاكرة لين يحفظه، والملفات الكبيرة جدًا ممكن تعلّق المتصفح خصوصًا في الجوال. تكمل؟';
+const BIG_EN = p => (p.n > 1 ? p.n + ' files are' : 'A file is') + ' over 100MB. The other device keeps each file in memory until it’s saved, and very large files can freeze the browser, especially on phones. Continue?';
+const I18N = {
+  ar: {
+    title: 'وصل — انقل ملفاتك بين الجوال والكمبيوتر',
+    desc: 'انقل الصور والملفات بين جوالك وكمبيوترك على نفس الواي فاي. امسح رمز وخلاص — بدون تطبيق وبدون حساب.',
+    brand: 'وصل', langBtn: 'English',
+    hero: 'انقل ملفاتك بين جوالك وكمبيوترك.',
+    tag: 'امسح رمز واسحب الملفات. تنتقل مباشرة من جهاز لجهاز على نفس الواي فاي.',
+    chip1: 'بدون تطبيق', chip2: 'بدون حساب', chip3: 'مشفّر من جهاز لجهاز',
+    scanTitle: 'امسح الرمز بكاميرا الجوال',
+    scanLead: 'وجّه الكاميرا على الرمز وافتح الرابط اللي يطلع لك. يتصل الجهازان مباشرة.',
+    pairNote: 'انقطع الاتصال. امسح الرمز مرة ثانية للرجوع.',
+    orCode: 'أو اكتب رمز هذا الجهاز في الجهاز الثاني',
+    codePh: 'رمز الجهاز الثاني', connect: 'اتصل', copy: 'نسخ الرابط', copied: 'تم النسخ', copyFail: 'ما قدرنا ننسخ', ownCode: 'هذا رمز جهازك',
+    mobileHint: 'على الجوال؟ افتح الموقع في الكمبيوتر وامسح الرمز اللي يطلع هناك، أو اكتب رمزه هنا.',
+    qrAria: 'رمز QR للربط',
+    preparing: 'جاري التجهيز…', connectingTo: 'جاري الاتصال بالجهاز {c}…', incoming: 'جهاز يحاول يتصل…',
+    connected: 'متصل', connectedTo: 'متصل بـ {n}', bye: 'قطع الاتصال', device: 'جهاز',
+    dropTitle: 'اسحب الملفات هنا أو اضغط للاختيار',
+    dropSub: 'صور، فيديو، مستندات — أي ملف، وأكثر من ملف مرة وحدة. في الكمبيوتر تقدر تلصق صورة بـ Ctrl+V.',
+    tip1: 'تأكد إن الجهازين على نفس شبكة الواي فاي (مو بيانات الجوال).',
+    tip2: 'شبكات الضيوف والفنادق والمقاهي والشركات أحيانًا تعزل الأجهزة عن بعض. جرّب شبكة البيت، أو وصّل الكمبيوتر بنقطة اتصال الجوال.',
+    tip3: 'طفّ الـVPN في الجهازين.', tip4: 'في ويندوز: خلّ نوع الشبكة «خاصة» مو «عامة».',
+    tip5: 'خلّ الشاشتين شغالة. الجوال يوقف الصفحات اللي في الخلفية.',
+    retry: 'حاول مرة ثانية',
+    files: 'الملفات', filesNote: 'احفظ الملفات أول ما توصل. تنمسح إذا قفلت الصفحة.',
+    iosHint: 'في الآيفون: اضغط على الصورة ثم اضغط عليها مطوّلًا واختر «إضافة إلى الصور».',
+    how: 'كيف يشتغل',
+    s1t: 'نفس الشبكة', s1: 'وصّل الجهازين على نفس الواي فاي.',
+    s2t: 'امسح الرمز', s2: 'افتح الموقع في جهاز وامسح الرمز بكاميرا الثاني.',
+    s3t: 'ارمِ الملفات', s3: 'اسحب أو اختر الملفات في أي جهاز، توصل للثاني.',
+    q1: 'ما اتصل؟', q1a: 'نفس شبكة الواي فاي، والـVPN مطفي، والشاشتين شغالة.',
+    q1b: 'شبكات الضيوف والشركات غالبًا تعزل الأجهزة. نقطة اتصال الجوال حل سريع.', q1c: 'ويندوز: نوع الشبكة لازم يكون «خاصة».',
+    q2: 'هل ملفاتي تمر على سيرفر؟',
+    a2: 'لا. خادم الربط يمرر بيانات الاتصال الأولية فقط (رمز الجهاز وعناوين الشبكة)، والملفات نفسها تنتقل مباشرة بين الجهازين عبر WebRTC بقناة مشفّرة. ما فيه خادم وسيط ينقل الملفات، وما يُحفظ شيء.',
+    q3: 'فيه حد لحجم الملف؟',
+    a3: 'ما فيه حد ثابت. لكن الجهاز المستقبل يحتفظ بالملف في الذاكرة لين تحفظه، فالملفات فوق 100MB نطلب تأكيدك قبل إرسالها.',
+    q4: 'يشتغل على وش؟',
+    a4: 'أي جهازين بمتصفح حديث: آيفون، أندرويد، ماك، ويندوز. جوال↔كمبيوتر، جوال↔جوال، أو كمبيوتر↔كمبيوتر.',
+    foot: 'يتصل الجهاز بجهاز واحد في نفس الوقت. الرمز يتغير إذا فتحت الموقع في تبويب جديد.',
+    errUnknownCode: 'الرمز غير صحيح، أو الجهاز الثاني قفل الصفحة.',
+    errBrowser: 'هذا المتصفح ما يدعم الاتصال المباشر. جرّب Safari أو Chrome محدّث.',
+    errServer: 'ما قدرنا نوصل لخادم الربط. تأكد إن الإنترنت شغال.',
+    errGeneric: 'صار خطأ في الاتصال ({t}).', errPair: 'ما قدرنا نربط الجهازين ببعض.',
+    errLost: 'انقطع الاتصال بالجهاز الثاني.',
+    errBusy: 'الجهاز الثاني متصل بجهاز ثالث الحين. اقطع الاتصال هناك أو انتظر ثواني وحاول مرة ثانية.',
+    errLoad: 'هذا المتصفح ما يدعم الاتصال المباشر، أو ما تحمّلت الصفحة كاملة. حدّث الصفحة.',
+    waiting: 'بالانتظار', receiving: 'جاري الاستلام', sending: 'جاري الإرسال', sentWait: 'أُرسل، بانتظار التأكيد',
+    delivered: 'وصل ✓', received: 'وصل', lostMid: 'انقطع قبل ما يكتمل', incomplete: 'ما اكتمل',
+    readFail: 'ما قدرنا نقرأ الملف', sendLost: 'انقطع الاتصال، أرسله مرة ثانية',
+    save: 'حفظ', remove: 'إزالة', file: 'ملف', big: BIG_AR
+  },
+  en: {
+    title: 'Wasl — Send files between your phone and computer',
+    desc: 'Send photos and files between your phone and computer on the same Wi-Fi. Scan a code — no app, no account.',
+    brand: 'Wasl', langBtn: 'العربية',
+    hero: 'Move files between your phone and computer.',
+    tag: 'Scan a code, drop your files. They go straight from one device to the other on the same Wi-Fi.',
+    chip1: 'No app', chip2: 'No account', chip3: 'Encrypted device to device',
+    scanTitle: 'Scan the code with your phone camera',
+    scanLead: 'Point your camera at the code and open the link. The two devices connect directly.',
+    pairNote: 'Disconnected. Scan the code again to reconnect.',
+    orCode: 'Or type this device’s code on the other one',
+    codePh: 'Other device’s code', connect: 'Connect', copy: 'Copy link', copied: 'Copied', copyFail: 'Couldn’t copy', ownCode: 'That’s this device’s code',
+    mobileHint: 'On a phone? Open the site on your computer and scan the code there, or type its code here.',
+    qrAria: 'Pairing QR code',
+    preparing: 'Getting ready…', connectingTo: 'Connecting to {c}…', incoming: 'A device is connecting…',
+    connected: 'Connected', connectedTo: 'Connected to {n}', bye: 'Disconnect', device: 'device',
+    dropTitle: 'Drop files here or tap to choose',
+    dropSub: 'Photos, videos, documents — any file, several at once. On a computer you can paste an image with Ctrl+V.',
+    tip1: 'Make sure both devices are on the same Wi-Fi (not mobile data).',
+    tip2: 'Guest, hotel, café and office networks often isolate devices. Try your home network, or connect the computer to your phone’s hotspot.',
+    tip3: 'Turn off any VPN on both devices.', tip4: 'On Windows, set the network type to “Private”, not “Public”.',
+    tip5: 'Keep both screens on — phones pause pages in the background.',
+    retry: 'Try again',
+    files: 'Files', filesNote: 'Save files as they arrive — they’re gone when you close the page.',
+    iosHint: 'On iPhone: tap the photo, then press and hold it and choose “Add to Photos”.',
+    how: 'How it works',
+    s1t: 'Same network', s1: 'Connect both devices to the same Wi-Fi.',
+    s2t: 'Scan the code', s2: 'Open the site on one device and scan its code with the other’s camera.',
+    s3t: 'Drop your files', s3: 'Drag or pick files on either device — they arrive on the other.',
+    q1: 'Not connecting?', q1a: 'Same Wi-Fi, VPN off, both screens on.',
+    q1b: 'Guest and office networks often isolate devices — your phone’s hotspot is a quick fix.', q1c: 'Windows: the network type must be “Private”.',
+    q2: 'Do my files go through a server?',
+    a2: 'No. The pairing server only passes the initial connection details (the device code and network addresses). The files themselves travel directly between the two devices over an encrypted WebRTC channel. No server relays them and nothing is stored.',
+    q3: 'Is there a size limit?',
+    a3: 'No fixed limit. But the receiving device keeps each file in memory until you save it, so we ask before sending files over 100MB.',
+    q4: 'What does it work on?',
+    a4: 'Any two devices with a modern browser: iPhone, Android, Mac, Windows. Phone↔computer, phone↔phone or computer↔computer.',
+    foot: 'One device at a time. The code changes when you open the site in a new tab.',
+    errUnknownCode: 'That code doesn’t exist, or the other device closed the page.',
+    errBrowser: 'This browser doesn’t support direct connections. Try an up-to-date Safari or Chrome.',
+    errServer: 'Couldn’t reach the pairing server. Check your internet connection.',
+    errGeneric: 'Connection error ({t}).', errPair: 'Couldn’t connect the two devices.',
+    errLost: 'Lost the connection to the other device.',
+    errBusy: 'The other device is connected to someone else right now. Disconnect there, or wait a few seconds and try again.',
+    errLoad: 'This browser doesn’t support direct connections, or the page didn’t fully load. Reload the page.',
+    waiting: 'Queued', receiving: 'Receiving', sending: 'Sending', sentWait: 'Sent, waiting for confirmation',
+    delivered: 'Delivered ✓', received: 'Received', lostMid: 'Interrupted before finishing', incomplete: 'Incomplete',
+    readFail: 'Couldn’t read the file', sendLost: 'Connection lost — send it again',
+    save: 'Save', remove: 'Remove', file: 'file', big: BIG_EN
+  }
+};
+const ICON_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m0 0-5 5m5-5 5 5"/></svg>';
+const ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14m0 0-5-5m5 5 5-5"/></svg>';
+
 const $ = s => document.querySelector(s);
 const ABC = 'abcdefghjkmnpqrstuvwxyz23456789';
 const qs = new URLSearchParams(location.search);
@@ -187,16 +384,50 @@ const signal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? qs.get('si
 const UA = navigator.userAgent;
 const iOS = /iPhone|iPad/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
 const items = new Map();
+const ui = { wait: ['preparing'], fail: ['errPair'], peer: ['connected'] }; // آخر رسائل معروضة، نعيد رسمها إذا تغيّرت اللغة
 let peer, conn, myCode = '', dialed = '', queue = [], sending = false, rx = null, timer, beat, seen = 0, seq = 0, rseq = 0, lock;
+let lang = (() => {
+  try { const s = localStorage.getItem('wasl-lang'); if (s === 'ar' || s === 'en') return s; } catch (e) {}
+  return (navigator.languages || [navigator.language || '']).some(l => /^ar\b/i.test(l)) ? 'ar' : 'en';
+})();
 
+const t = (k, p) => {
+  const s = I18N[lang][k] ?? I18N.ar[k] ?? k;
+  return typeof s === 'function' ? s(p || {}) : String(s).replace(/\{(\w+)\}/g, (_, x) => (p && p[x] != null ? p[x] : ''));
+};
 const clean = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
 const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => ABC[b % ABC.length]).join('');
-const fmt = n => '\u2066' + raw(n) + '\u2069'; // عزل الرقم والوحدة عشان ما ينقلب ترتيبهم داخل النص العربي
 const raw = n => n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB';
-const device = () => iOS ? (/iPad|Macintosh/.test(UA) ? 'iPad' : 'iPhone') : /Android/.test(UA) ? 'Android' : /Mac/.test(UA) ? 'Mac' : /Windows/.test(UA) ? 'Windows' : /Linux/.test(UA) ? 'Linux' : 'جهاز';
+const fmt = n => '⁦' + raw(n) + '⁩'; // عزل الرقم والوحدة عشان ما ينقلب ترتيبهم داخل النص العربي
+const device = () => iOS ? (/iPad|Macintosh/.test(UA) ? 'iPad' : 'iPhone') : /Android/.test(UA) ? 'Android' : /Mac/.test(UA) ? 'Mac' : /Windows/.test(UA) ? 'Windows' : /Linux/.test(UA) ? 'Linux' : '';
 const send = o => { if (conn && conn.open) conn.send(JSON.stringify(o)); };
 const show = v => ['pair', 'wait', 'room', 'fail'].forEach(n => { $('#' + n).hidden = n !== v; });
-const waiting = t => { $('#waitMsg').textContent = t; show('wait'); };
+function waiting(k, p) { ui.wait = [k, p]; $('#waitMsg').textContent = t(k, p); show('wait'); }
+function setPeer(k, p) { ui.peer = [k, p]; $('#peerName').textContent = t(k, p); }
+function fail(k, p, net) {
+  clearTimeout(timer);
+  ui.fail = [k, p];
+  $('#failMsg').textContent = t(k, p);
+  $('#tips').hidden = !net;
+  show('fail');
+}
+
+function applyLang(l, save) {
+  lang = l;
+  const d = document.documentElement;
+  d.lang = l; d.dir = l === 'ar' ? 'rtl' : 'ltr';
+  document.title = t('title');
+  $('meta[name=description]').content = t('desc');
+  document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(e => { e.setAttribute('aria-label', t(e.dataset.i18nAria)); });
+  $('#lang').lang = l === 'ar' ? 'en' : 'ar';
+  $('#waitMsg').textContent = t(...ui.wait);
+  $('#failMsg').textContent = t(...ui.fail);
+  $('#peerName').textContent = t(...ui.peer);
+  items.forEach(paint);
+  if (save) try { localStorage.setItem('wasl-lang', l); } catch (e) {}
+}
 
 function opts() {
   const o = { config: CFG.ice, debug: 0 };
@@ -229,35 +460,35 @@ function host(fresh) {
       c.on('open', () => { c.send(JSON.stringify({ t: 'busy' })); setTimeout(() => c.close(), 5000); }); // هو يقفل أول ما يستلم، وهذا احتياط
       return;
     }
-    waiting('جهاز يحاول يتصل…');
+    waiting('incoming');
     attach(c);
   });
 }
-function guest(t) {
-  dialed = t;
-  waiting('جاري الاتصال بالجهاز ' + t + '…');
+function guest(t0) {
+  dialed = t0;
+  waiting('connectingTo', { c: t0 });
   peer = new Peer(opts());
   wire();
-  peer.on('open', () => dial(t));
+  peer.on('open', () => dial(t0));
 }
 function wire() {
   const p = peer;
   p.on('error', e => {
     if (p !== peer) return;
-    const t = e && e.type;
-    if (t === 'unavailable-id') { p.destroy(); try { sessionStorage.removeItem('wasl-id'); } catch (x) {} return host(true); }
-    if (t === 'peer-unavailable') { conn = null; return fail('الرمز غير صحيح، أو الجهاز الثاني قفل الصفحة.'); }
+    const ty = e && e.type;
+    if (ty === 'unavailable-id') { p.destroy(); try { sessionStorage.removeItem('wasl-id'); } catch (x) {} return host(true); }
+    if (ty === 'peer-unavailable') { conn = null; return fail('errUnknownCode'); }
     if (conn && conn.open) return; // الاتصال المباشر شغال، خادم الربط مو مهم الحين
-    if (t === 'browser-incompatible') return fail('هذا المتصفح ما يدعم الاتصال المباشر. جرّب Safari أو Chrome محدّث.');
-    if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(t)) return fail('ما قدرنا نوصل لخادم الربط. تأكد إن الإنترنت شغال.');
-    fail('صار خطأ في الاتصال (' + t + ').', true);
+    if (ty === 'browser-incompatible') return fail('errBrowser');
+    if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(ty)) return fail('errServer');
+    fail('errGeneric', { t: ty }, true);
   });
   p.on('disconnected', () => setTimeout(() => { if (p === peer && !p.destroyed && p.disconnected) p.reconnect(); }, 1500));
 }
-function dial(t) {
-  dialed = t;
-  waiting('جاري الاتصال بالجهاز ' + t + '…');
-  attach(peer.connect(CFG.prefix + t, { serialization: 'raw', reliable: true }));
+function dial(t0) {
+  dialed = t0;
+  waiting('connectingTo', { c: t0 });
+  attach(peer.connect(CFG.prefix + t0, { serialization: 'raw', reliable: true }));
 }
 function redial() {
   if (!dialed) {
@@ -273,8 +504,8 @@ function attach(c) {
   if (conn && conn !== c) { const old = conn; conn = null; old.close(); }
   conn = c;
   clearTimeout(timer);
-  $('#peerName').textContent = 'متصل';
-  timer = setTimeout(() => { if (conn === c && !c.open) { conn = null; c.close(); fail('ما قدرنا نربط الجهازين ببعض.', true); } }, CFG.timeout);
+  setPeer('connected');
+  timer = setTimeout(() => { if (conn === c && !c.open) { conn = null; c.close(); fail('errPair', null, true); } }, CFG.timeout);
   c.on('open', () => {
     if (conn !== c) return;
     clearTimeout(timer);
@@ -302,16 +533,10 @@ function lost(c) {
   conn = null;
   clearTimeout(timer);
   clearInterval(beat);
-  if (rx) { mark(rx.key, 'bad', 'انقطع قبل ما يكتمل'); rx = null; }
-  if (dialed) return fail('انقطع الاتصال بالجهاز الثاني.', true);
+  if (rx) { mark(rx.key, 'bad', 'lostMid'); rx = null; }
+  if (dialed) return fail('errLost', null, true);
   $('#pairNote').hidden = false;
   show('pair');
-}
-function fail(msg, net) {
-  clearTimeout(timer);
-  $('#failMsg').textContent = msg;
-  $('#tips').hidden = !net;
-  show('fail');
 }
 function renderQR() {
   const q = qrcode(0, 'M');
@@ -320,8 +545,11 @@ function renderQR() {
   const n = q.getModuleCount();
   let d = '';
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q.isDark(y, x)) d += 'M' + x + ' ' + y + 'h1v1h-1z';
-  $('#qr').innerHTML = '<svg viewBox="-3 -3 ' + (n + 6) + ' ' + (n + 6) + '" shape-rendering="crispEdges"><path d="' + d + '" fill="#0e1116"/></svg>';
-  $('#code').textContent = myCode.slice(0, 3) + ' ' + myCode.slice(3);
+  $('#qr').innerHTML = '<svg viewBox="-3 -3 ' + (n + 6) + ' ' + (n + 6) + '" shape-rendering="crispEdges"><path d="' + d + '" fill="#0c0e13"/></svg>';
+  const box = $('#code');
+  box.textContent = '';
+  box.setAttribute('aria-label', myCode);
+  for (const ch of myCode) { const b = document.createElement('b'); b.textContent = ch; box.append(b); }
 }
 async function wake() {
   try { if ('wakeLock' in navigator && !lock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => { lock = null; }); } } catch (e) {}
@@ -334,39 +562,40 @@ function onData(d) {
     let m;
     try { m = JSON.parse(d); } catch (e) { return; }
     if (m.t === 'ping') return;
-    if (m.t === 'busy') { const c = conn; conn = null; if (c) c.close(); return fail('الجهاز الثاني متصل بجهاز ثالث الحين. اقطع الاتصال هناك أو انتظر ثواني وحاول مرة ثانية.'); }
-    if (m.t === 'hi') $('#peerName').textContent = 'متصل بـ ' + String(m.name || 'جهاز').slice(0, 24);
+    if (m.t === 'busy') { const c = conn; conn = null; if (c) c.close(); return fail('errBusy'); }
+    if (m.t === 'hi') setPeer('connectedTo', { n: String(m.name || t('device')).slice(0, 24) });
     else if (m.t === 'meta') {
-      if (rx) mark(rx.key, 'bad', 'ما اكتمل');
-      rx = { id: m.id | 0, key: 'r' + (++rseq), name: String(m.name || 'ملف').slice(0, 200), size: Math.max(0, +m.size || 0), mime: String(m.mime || '').slice(0, 100), got: 0, parts: [] };
+      if (rx) mark(rx.key, 'bad', 'incomplete');
+      rx = { id: m.id | 0, key: 'r' + (++rseq), name: String(m.name || t('file')).slice(0, 200), size: Math.max(0, +m.size || 0), mime: String(m.mime || '').slice(0, 100), got: 0, parts: [] };
       addItem(rx.key, 'in', rx.name, rx.size);
     }
     else if (m.t === 'end' && rx) { if (!rx.skip) finish(rx); rx = null; }
     else if (m.t === 'cancel' && rx) { remove(rx.key); rx = null; }
-    else if (m.t === 'got') mark('s' + (m.id | 0), 'done', 'وصل ✓');
+    else if (m.t === 'got') mark('s' + (m.id | 0), 'done', 'delivered');
     return;
   }
   if (!rx || rx.skip) return;
   rx.parts.push(d);
   rx.got += d.byteLength || d.size || 0;
-  tick(rx.key, rx.got, rx.size, 'جاري الاستلام');
+  tick(rx.key, rx.got, rx.size, 'receiving');
 }
 function finish(r) {
-  const li = items.get(r.key);
-  if (!li) return;
+  const it = items.get(r.key);
+  if (!it) return;
+  const li = it.li;
   const url = URL.createObjectURL(new Blob(r.parts, { type: r.mime || 'application/octet-stream' }));
   r.parts = [];
   li.dataset.url = url;
   if (/^image\/(png|jpe?g|gif|webp|avif|bmp|heic|heif)$/i.test(r.mime)) {
     const th = li.querySelector('.th'), a = document.createElement('a'), img = new Image();
     a.href = url; a.target = '_blank'; a.rel = 'noopener'; img.alt = ''; img.src = url;
-    img.onerror = () => { th.textContent = '↓'; };
+    img.onerror = () => { th.innerHTML = ICON_DOWN; };
     a.append(img); th.textContent = ''; th.append(a);
   }
   const save = document.createElement('a');
-  save.className = 'btn'; save.href = url; save.download = r.name; save.textContent = 'حفظ';
+  save.className = 'btn'; save.href = url; save.download = r.name;
   li.querySelector('.act').prepend(save);
-  mark(r.key, 'done', fmt(r.size) + ' · وصل');
+  mark(r.key, 'done', 'received');
   send({ t: 'got', id: r.id });
   if (iOS) $('#iosHint').hidden = false;
 }
@@ -376,13 +605,13 @@ function enqueue(list) {
   const fs = Array.from(list || []);
   if (!fs.length) return;
   const big = fs.filter(f => f.size > CFG.big).length;
-  if (big && !confirm((big > 1 ? big + ' ملفات أكبر' : 'ملف أكبر') + ' من 100MB. الجهاز الثاني يحتفظ بالملف في الذاكرة لين يحفظه، والملفات الكبيرة جدًا ممكن تعلّق المتصفح خصوصًا في الجوال. تكمل؟')) return;
+  if (big && !confirm(t('big', { n: big }))) return;
   fs.forEach(f => { const id = ++seq; queue.push({ id, file: f }); addItem('s' + id, 'out', f.name, f.size); });
   pump();
 }
 const drained = dc => new Promise(res => {
-  const f = () => { clearTimeout(t); dc.removeEventListener('bufferedamountlow', f); res(); };
-  const t = setTimeout(f, 500); // احتياط لو ما وصل الحدث
+  const f = () => { clearTimeout(tm); dc.removeEventListener('bufferedamountlow', f); res(); };
+  const tm = setTimeout(f, 500); // احتياط لو ما وصل الحدث
   dc.addEventListener('bufferedamountlow', f);
 });
 async function pump() {
@@ -402,12 +631,12 @@ async function pump() {
         if (!c.open) throw new Error('closed');
         c.send(buf);
         off += buf.byteLength;
-        tick(key, off, f.size, 'جاري الإرسال');
+        tick(key, off, f.size, 'sending');
       }
       if (j.cancel) c.send(JSON.stringify({ t: 'cancel', id: j.id }));
-      else { c.send(JSON.stringify({ t: 'end', id: j.id })); mark(key, '', fmt(f.size) + ' · أُرسل، بانتظار التأكيد'); }
+      else { c.send(JSON.stringify({ t: 'end', id: j.id })); mark(key, '', 'sentWait'); }
     } catch (e) {
-      mark(key, 'bad', c.open ? 'ما قدرنا نقرأ الملف' : 'انقطع الاتصال، أرسله مرة ثانية');
+      mark(key, 'bad', c.open ? 'readFail' : 'sendLost');
       if (c.open) try { c.send(JSON.stringify({ t: 'cancel', id: j.id })); } catch (x) {}
     }
     queue.shift();
@@ -419,40 +648,50 @@ async function pump() {
 function addItem(key, dir, name, size) {
   const li = document.createElement('li');
   li.className = 'it';
-  li.dataset.size = size;
-  li.innerHTML = '<div class="th"></div><div><b class="nm"></b><span class="sz"></span><div class="bar"><i></i></div></div><div class="act"><button class="x" type="button" aria-label="إزالة">×</button></div>';
-  li.querySelector('.th').textContent = dir === 'in' ? '↓' : '↑';
+  li.innerHTML = '<div class="th"></div><div><b class="nm"></b><span class="sz"></span><div class="bar"><i></i></div></div><div class="act"><button class="x" type="button">×</button></div>';
+  li.querySelector('.th').innerHTML = dir === 'in' ? ICON_DOWN : ICON_UP;
   li.querySelector('.nm').textContent = name;
-  li.querySelector('.sz').textContent = fmt(size) + (dir === 'in' ? ' · جاري الاستلام' : ' · بالانتظار');
+  const it = { key, li, dir, size, st: dir === 'in' ? 'receiving' : 'waiting', pct: -1 };
   li.querySelector('.x').onclick = () => remove(key);
-  items.set(key, li);
+  items.set(key, it);
+  paint(it);
   $('#list').prepend(li);
   $('#files').hidden = false;
+  $('#fcount').textContent = items.size;
 }
-function tick(key, got, size, label) {
-  const li = items.get(key);
+function paint(it) {
+  const live = it.pct >= 0 && (it.st === 'receiving' || it.st === 'sending');
+  it.li.querySelector('.sz').textContent = fmt(it.size) + ' · ' + t(it.st) + (live ? ' ' + it.pct + '%' : '');
+  it.li.querySelector('.x').setAttribute('aria-label', t('remove'));
+  const s = it.li.querySelector('a[download]');
+  if (s) s.textContent = t('save');
+}
+function tick(key, got, size, st) {
+  const it = items.get(key);
   const p = size ? Math.min(100, Math.floor(got / size * 100)) : 100;
-  if (!li || li.dataset.p == p) return;
-  li.dataset.p = p;
-  li.querySelector('.bar i').style.width = p + '%';
-  li.querySelector('.sz').textContent = fmt(size) + ' · ' + label + ' ' + p + '%';
+  if (!it || (it.pct === p && it.st === st)) return;
+  it.pct = p; it.st = st;
+  it.li.querySelector('.bar i').style.width = p + '%';
+  paint(it);
 }
-function mark(key, cls, text) {
-  const li = items.get(key);
-  if (!li) return;
-  if (cls) li.classList.add(cls);
-  li.querySelector('.bar i').style.width = '100%';
-  li.querySelector('.sz').textContent = cls === 'done' && key[0] === 's' ? fmt(+li.dataset.size) + ' · ' + text : text;
+function mark(key, cls, st) {
+  const it = items.get(key);
+  if (!it) return;
+  if (cls) it.li.classList.add(cls);
+  it.st = st;
+  it.li.querySelector('.bar i').style.width = '100%';
+  paint(it);
 }
 function remove(key) {
-  const li = items.get(key);
-  if (!li) return;
-  if (li.dataset.url) URL.revokeObjectURL(li.dataset.url);
+  const it = items.get(key);
+  if (!it) return;
+  if (it.li.dataset.url) URL.revokeObjectURL(it.li.dataset.url);
   const j = queue.find(q => 's' + q.id === key);
   if (j) { j.cancel = true; if (!(sending && queue[0] === j)) queue = queue.filter(q => q !== j); }
   if (rx && rx.key === key) { rx.skip = true; rx.parts = []; }
-  li.remove();
+  it.li.remove();
   items.delete(key);
+  $('#fcount').textContent = items.size;
   if (!items.size) $('#files').hidden = true;
 }
 
@@ -467,17 +706,18 @@ addEventListener('paste', e => { if (e.target.closest && e.target.closest('input
 $('#pick').addEventListener('change', e => { enqueue(e.target.files); e.target.value = ''; });
 $('#join').addEventListener('submit', e => {
   e.preventDefault();
-  const t = clean($('#codeIn').value);
-  if (t.length < 4) return $('#codeIn').focus();
-  if (t === myCode) { $('#codeIn').value = ''; $('#codeIn').placeholder = 'هذا رمز جهازك'; return; }
-  dialed = t;
+  const v = clean($('#codeIn').value);
+  if (v.length < 4) return $('#codeIn').focus();
+  if (v === myCode) { $('#codeIn').value = ''; $('#codeIn').placeholder = t('ownCode'); return; }
+  dialed = v;
   redial();
 });
 $('#copy').addEventListener('click', async () => {
   const b = $('#copy');
-  try { await navigator.clipboard.writeText(linkFor(myCode)); b.textContent = 'تم النسخ'; } catch (e) { b.textContent = 'ما قدرنا ننسخ'; }
-  setTimeout(() => { b.textContent = 'نسخ الرابط'; }, 1800);
+  try { await navigator.clipboard.writeText(linkFor(myCode)); b.textContent = t('copied'); } catch (e) { b.textContent = t('copyFail'); }
+  setTimeout(() => { b.textContent = t('copy'); }, 1800);
 });
+$('#lang').addEventListener('click', () => applyLang(lang === 'ar' ? 'en' : 'ar', true));
 $('#retry').addEventListener('click', redial);
 $('#bye').addEventListener('click', () => {
   const c = conn;
@@ -494,12 +734,13 @@ document.addEventListener('visibilitychange', () => {
 });
 addEventListener('pagehide', e => { if (!e.persisted && conn) conn.close(); }); // إغلاق نظيف يخبر الطرف الثاني فورًا
 addEventListener('beforeunload', e => {
-  if (queue.length || rx || [...items.values()].some(li => li.dataset.url)) { e.preventDefault(); e.returnValue = ''; }
+  if (queue.length || rx || [...items.values()].some(it => it.li.dataset.url)) { e.preventDefault(); e.returnValue = ''; }
 });
 
+applyLang(lang);
 if (/iPhone|Android/.test(UA)) $('#mobileHint').hidden = false;
 const start = clean(qs.get('r'));
-if (!window.Peer || !window.RTCPeerConnection || !window.qrcode) fail('هذا المتصفح ما يدعم الاتصال المباشر، أو ما تحمّلت الصفحة كاملة. حدّث الصفحة.');
+if (!window.Peer || !window.RTCPeerConnection || !window.qrcode) fail('errLoad');
 else if (start) guest(start);
 else host();
 }

@@ -17,9 +17,9 @@ with sync_playwright() as p:
     br = p.chromium.launch(executable_path=CHROME, args=ARGS)
     iphone = {k: v for k, v in p.devices['iPhone 13'].items() if k != 'default_browser_type'}
     def ctx(**kw):
-        c = br.new_context(**kw); c.route(re.compile(r'fonts\.(googleapis|gstatic)\.com'), lambda r: r.abort()); return c
+        kw.setdefault('locale', 'ar-SA'); c = br.new_context(**kw); c.route(re.compile(r'fonts\.(googleapis|gstatic)\.com'), lambda r: r.abort()); return c
     pa = ctx(viewport={'width': 1280, 'height': 900}).new_page(); pa.goto(BASE)
-    pa.wait_for_selector('#pair:not([hidden])'); code = pa.inner_text('#code').replace(' ', '')
+    pa.wait_for_selector('#pair:not([hidden])'); code = pa.inner_text('#code').replace(' ', '').replace('\n', '')
     link = f'{ROOT}?r={code}&signal=127.0.0.1:9000'
     pb = ctx(**iphone).new_page(); pb.goto(link)
     pb.wait_for_selector('#room:not([hidden])'); pa.wait_for_selector('#room:not([hidden])')
